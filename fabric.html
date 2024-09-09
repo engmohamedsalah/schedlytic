@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fabric.js Example</title>
+  <!-- Include Fabric.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+</head>
+<body>
+
+<!-- Create a canvas element -->
+<canvas id="canvas" width="400" height="400" style="border:1px solid #ccc;"></canvas>
+
+<script>
+  // Create a Fabric canvas
+  var imagecanvas = new fabric.Canvas('canvas');
+
+  // Create the first image
+
+
+  var imagecanvas = document.createElement('canvas');
+  var imagecontext = imagecanvas.getContext('2d');
+
+  /* uncomment do see the canvas to debug
+  document.body.appendChild(imagecanvas);
+  */
+
+
+      var newImg = document.createElement('img');
+      newImg.src ='https://dneelh732mdsp.cloudfront.net/assets/images/1703500304331.png';
+      newImg.crossOrigin ="anonymous"
+      
+      newImg.onload = function() {
+        var width  = newImg.width;
+        var height = newImg.height;
+
+        var mask = document.createElement('img');
+        mask.src ='https://dneelh732mdsp.cloudfront.net/assets/images/1703574680728.png';
+        mask.crossOrigin="anonymous"
+        mask.onload = function() {
+          imagecanvas.width  = width;
+          imagecanvas.height = height;
+
+          imagecontext.drawImage(mask, 0, 0, width, height);
+          imagecontext.globalCompositeOperation = 'source-in';
+          imagecontext.drawImage(newImg, 0, 0);
+          var mm = document.createElement('img');
+          mm.src=imagecanvas.toDataURL();
+
+          fabric.Image.fromURL(mm.src, function(img11) {
+            img11.set({
+              left: 10,
+              top: 10,
+              width: 200,
+              height: 200
+            });
+            imagecanvas.add(img11)
+          })
+
+        }
+      }
+
+</script>
+
+</body>
+</html>

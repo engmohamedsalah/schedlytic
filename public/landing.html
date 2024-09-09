@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Begin Head -->
+
+<head>
+	<!--=== Required meta tags ===-->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<!--=== custom css ===-->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap"
+		rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+		crossorigin="anonymous" />
+	<link rel="shortcut icon" type="image/ico" href="assets/images/favicon.png" />
+	<link rel="stylesheet" href="assets/css/style.css">
+	<!--=== custom css ===-->
+	<title>PixaSocial</title>
+
+</head>
+
+<body>
+	<script>
+		function callApi() {
+			fetch(`/api/subscription-plan`)
+				.then(response => response.json())
+				.then(data => {
+					updatePlans(data.data)
+				})
+				.catch(error => {
+					console.error('Error fetching data:', error);
+				});
+		}
+		window.onload = callApi;
+		function updatePlans(data) {
+			// Get the container where the plans will be appended
+			var plansContainer = document.getElementById('showPlans');
+			// Loop through the API data and create HTML for each plan
+			data.forEach(plan => {
+				var parent = document.createElement('div')
+				parent.className = 'col-lg-4 col-md-6 ps-standard-plan';
+				var planDiv = document.createElement('div');
+				planDiv.className = 'ps-plans-holder';
+
+				var heading = document.createElement('h4');
+				heading.textContent = plan.name;
+
+
+				var price = document.createElement('span');
+				price.className = 'ps-plan-price';
+				price.innerHTML = `<a href="javascript:void(0);">$<span>${plan?.price ? plan?.price : 0}</span><sbu>/${plan?.time_period ? plan?.time_period : ""}</sbu></a>`;
+
+				var des = document.createElement("div")
+				des.className = "ps-price-list"
+
+				let p = document.createElement('p')
+				p.innerHTML = `<img src="assets/images/landing/check.png" alt=""> ${plan?.description ? plan?.description : ''}`;
+
+				let p1 = document.createElement('p')
+				p1.innerHTML = `<img src="assets/images/landing/check.png" alt=""><span> Post Per Month : </span> ${plan?.post_per_month ? plan?.post_per_month : ''}	`;
+
+				let p2 = document.createElement('p')
+				p2.innerHTML = `<img src="assets/images/landing/check.png" alt=""><span> Post Type :</span> ${plan?.post_type ? plan?.post_type.charAt(0).toUpperCase() + plan?.post_type.slice(1) : ''}	`;
+
+				let p3 = document.createElement('p')
+				p3.innerHTML = `<img src="assets/images/landing/check.png" alt=""><span> trial Period : </span> ${plan?.trial_period ? plan?.trial_period + " " + "Day" : ''}	`;
+
+				let p4 = document.createElement('p')
+				p4.innerHTML = plan?.ai_image_generate ? `<img src="assets/images/landing/check.png" alt="">  <span> AI Image Generate </span>` : "";
+
+				let p5 = document.createElement('p')
+				p5.innerHTML = plan?.ai_text_generate ? `<img src="assets/images/landing/check.png" alt="">  <span> AI Text Generate </span>` : "";
+
+				let p6 = document.createElement('p')
+				p6.innerHTML = plan?.editor_access ? `<img src="assets/images/landing/check.png" alt="">  <span> Editor Access </span>` : "";
+
+
+				des.append(p)
+				des.append(p1)
+				des.append(p2)
+				des.append(p3)
+				if (plan?.ai_image_generate) {
+					des.append(p4)
+				}
+				if (plan?.ai_text_generate) {
+					des.append(p5)
+				}
+				if (plan?.editor_access) {
+					des.append(p6)
+				}
+
+
+
+
+				var choosePlanBtn = document.createElement('a');
+				choosePlanBtn.href = `payment?id=${plan?.id}`;
+				choosePlanBtn.className = 'ps-btn';
+				choosePlanBtn.textContent = 'Choose Plan';
+
+				planDiv.appendChild(heading);
+				planDiv.appendChild(price)
+				planDiv.appendChild(des)
+				planDiv.appendChild(choosePlanBtn);
+				parent.appendChild(planDiv)
+
+				plansContainer.appendChild(parent);
+			});
+		}
+		// Call the API function when the page loads
+
+	</script>
+	<!-- Bottom To Top -->
+	<div class="ps-top-icon">
+		<a id="button" class="show">
+			<svg width="23" height="18" viewBox="0 0 23 18">
+				<path
+					d="M13.825,18.000 C10.772,18.000 7.928,16.517 6.217,14.033 C5.870,13.530 6.006,12.845 6.519,12.505 C7.032,12.165 7.729,12.297 8.076,12.801 C9.369,14.678 11.518,15.799 13.825,15.799 C17.647,15.799 20.757,12.749 20.757,9.000 C20.757,5.251 17.647,2.200 13.825,2.200 C11.512,2.200 9.359,3.326 8.067,5.212 C7.721,5.717 7.024,5.851 6.510,5.512 C5.996,5.173 5.859,4.489 6.205,3.985 C7.915,1.490 10.763,-0.000 13.825,-0.000 C18.884,-0.000 23.000,4.037 23.000,9.000 C23.000,13.963 18.884,18.000 13.825,18.000 ZM11.293,6.704 C10.902,6.313 10.902,5.679 11.293,5.287 C11.683,4.896 12.316,4.896 12.707,5.287 L15.706,8.291 C15.730,8.315 15.752,8.339 15.772,8.365 C15.777,8.371 15.782,8.377 15.787,8.384 C15.802,8.403 15.817,8.423 15.831,8.443 C15.835,8.449 15.838,8.455 15.842,8.462 C15.856,8.483 15.869,8.505 15.881,8.527 C15.883,8.532 15.886,8.537 15.888,8.541 C15.901,8.566 15.913,8.590 15.923,8.616 C15.925,8.619 15.925,8.622 15.927,8.626 C15.938,8.653 15.948,8.680 15.956,8.708 C15.957,8.712 15.958,8.715 15.959,8.719 C15.967,8.747 15.974,8.774 15.980,8.803 C15.982,8.812 15.982,8.820 15.984,8.829 C15.988,8.852 15.992,8.876 15.995,8.900 C15.998,8.933 16.000,8.966 16.000,9.000 C16.000,9.033 15.998,9.067 15.995,9.100 C15.992,9.124 15.988,9.148 15.984,9.172 C15.982,9.180 15.982,9.189 15.980,9.197 C15.974,9.226 15.967,9.254 15.959,9.282 C15.958,9.285 15.957,9.288 15.956,9.292 C15.948,9.320 15.938,9.348 15.927,9.375 C15.925,9.378 15.925,9.381 15.923,9.384 C15.913,9.410 15.901,9.435 15.888,9.459 C15.886,9.464 15.883,9.468 15.881,9.473 C15.869,9.495 15.856,9.517 15.842,9.539 C15.838,9.545 15.835,9.551 15.831,9.557 C15.817,9.577 15.802,9.597 15.787,9.616 C15.782,9.623 15.777,9.629 15.772,9.636 C15.752,9.661 15.730,9.685 15.707,9.708 L12.707,12.712 C12.511,12.908 12.256,13.006 12.000,13.006 C11.744,13.006 11.488,12.908 11.293,12.712 C10.902,12.321 10.902,11.688 11.293,11.296 L12.586,10.001 L1.000,10.001 C0.448,10.001 -0.000,9.553 -0.000,9.000 C-0.000,8.447 0.448,7.998 1.000,7.998 L12.586,7.998 L11.293,6.704 Z">
+				</path>
+			</svg>
+		</a>
+	</div>
+	<!-- Bottom To Top -->
+
+	<!-- Header Section Start -->
+	<header class="ps-header-wrapper">
+		<div class="container">
+			<div class="ps-header-flex">
+				<div class="ps-logo">
+					<a href="index.html">
+						<img src="assets/images/White-Logo.png" alt="">
+					</a>
+				</div>
+				<div class="ps-menu">
+					<ul>
+						<li><a href="#feature">features</a></li>
+						<li><a href="#plans">plans</a></li>
+						<li><a href="javascript:;">contact</a></li>
+					</ul>
+				</div>
+				<div>
+					<div class="ps-header-btn">
+						<a href="/login" class="ps-btn">login</a>
+						<a href="#plans" class="ps-btn">buy now</a>
+					</div>
+				</div>
+
+
+			</div>
+		</div>
+	</header>
+	<!-- Header Section End -->
+
+	<!-- Banner Section Start -->
+	<section class="ps-banner-wrapper">
+		<div class="container">
+			<div class="ps-banner-flex">
+				<div class="ps-banner-left">
+					<div class="ps-banner-left-inner">
+						<img src="assets/images/landing/banner-vec1.png" alt="" class="ps-banner-vec1">
+						<img src="assets/images/landing/banner-img1.png" alt="" class="ps-banner-img">
+						<img src="assets/images/landing/banner-vec2.png" alt="" class="ps-banner-vec2">
+						<img src="assets/images/landing/banner-vec3.png" alt="" class="ps-banner-vec3">
+					</div>
+				</div>
+				<div class="ps-banner-main">
+					<div class="ps-banner-heading">
+						<h2>Design, Plan, Schedule <br> Elevate Your Social Media Presence with</h2>
+						<h1>Effortless Content Design</h1>
+					</div>
+					<div class="ps-banner-image">
+						<img src="assets/images/landing/banner-main-img.png" alt="" data-tilt data-tilt-max="10"
+							data-tilt-speed="20" data-tilt-perspective="2000">
+					</div>
+				</div>
+				<div class="ps-banner-left">
+					<div class="ps-banner-left-inner">
+						<img src="assets/images/landing/banner-vec4.png" alt="" class="ps-banner-vec4">
+						<img src="assets/images/landing/banner-img2.png" alt="" class="ps-banner-img">
+						<img src="assets/images/landing/banner-vec5.png" alt="" class="ps-banner-vec5">
+						<img src="assets/images/landing/banner-vec6.png" alt="" class="ps-banner-vec6">
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<!-- Banner Section End -->
+
+	<!-- Feature Section Start -->
+	<section class="ps-feature-wrapper">
+		<div class="container">
+			<div class="ps-feature-heading">
+				<h4>Most premium and exclusive</h4>
+				<h1>features</h1>
+			</div>
+			<div class="ps-feature-main-parent">
+				<div class="ps-feature-left">
+					<div class="ps-feature-img">
+						<img src="assets/images/landing/f1.png" alt="">
+					</div>
+					<div class="ps-feature-img">
+						<div class="ps-feature-cstm-box">
+							<img src="assets/images/landing/user-img.png" alt="">
+							<h1>The User Dashboard Makes Your Journey As Smooth As Possible</h1>
+						</div>
+					</div>
+				</div>
+				<div class="ps-feature-right">
+					<div class="ps-feature-right-flex">
+						<div class="ps-feature-right-inner">
+							<div class="ps-feature-img ps-feat-2">
+								<img src="assets/images/landing/f2.png" alt="">
+							</div>
+						</div>
+						<div class="ps-feature-right-inner2">
+							<div class="ps-feature-img">
+								<img src="assets/images/landing/f3.png" alt="">
+							</div>
+							<div class="ps-feature-img">
+								<img src="assets/images/landing/f4.png" alt="">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<!-- Feature Section End -->
+
+	<!-- Editor Section Start -->
+	<div class="ps-editor-wrapper">
+		<div class="container">
+			<div class="ps-admin-heading ps-editor-heading">
+				<div class="ps-admin-grednt">
+					<h4>Awesome Editor</h4>
+				</div>
+				<h1>Create stunning social media visuals effortlessly with our premium editor</h1>
+			</div>
+			<div class="ps-editor-main-img">
+				<img src="assets/images/landing/editor-main-img.png" alt="">
+				<img src="assets/images/landing/banner-vec1.png" alt="" class="ps-edit-vec ps-edit-vec1">
+				<img src="assets/images/landing/banner-vec2.png" alt="" class="ps-edit-vec ps-edit-vec2">
+				<img src="assets/images/landing/banner-vec3.png" alt="" class="ps-edit-vec ps-edit-vec3">
+				<img src="assets/images/landing/banner-vec4.png" alt="" class="ps-edit-vec ps-edit-vec4">
+				<img src="assets/images/landing/banner-vec6.png" alt="" class="ps-edit-vec ps-edit-vec6">
+				<img src="assets/images/landing/banner-vec5.png" alt="" class="ps-edit-vec ps-edit-vec5">
+			</div>
+			<div class="ps-editr-info-main">
+				<div class="row gy-4 align-items-center">
+					<div class="col-lg-6">
+						<div class="ps-editr-content">
+							<h4>Sketch up your ideas with Pencil</h4>
+							<p>Bring your creative concepts to life with Pencil, a versatile tool that allows you to
+								sketch and visualize your ideas with ease. Unleash your imagination and turn your
+								visions into reality. Transform abstract ideas into captivating visuals as you sketch
+								and outline your post concepts.</p>
+						</div>
+					</div>
+					<div class="col-lg-6">
+						<div class="ps-editr-img">
+							<img src="assets/images/landing/e1.png" alt="">
+						</div>
+					</div>
+				</div>
+				<div class="row gy-4 align-items-center">
+					<div class="col-lg-6">
+						<div class="ps-editr-img">
+							<img src="assets/images/landing/e2.png" alt="">
+						</div>
+					</div>
+					<div class="col-lg-6">
+						<div class="ps-editr-content">
+							<h4>Transform Your Content with Typography Options</h4>
+							<p>PixaSocial Editor offers a variety of typography options to customize headings,
+								paragraphs, and other elements with font style, color, size, and line height. You can
+								also bold, underline, and strikethrough to make your text stand out and captivate
+								readers. With typography, you can create engaging and impactful content.</p>
+						</div>
+					</div>
+				</div>
+				<div class="row gy-4 align-items-center">
+					<div class="col-lg-6">
+						<div class="ps-editr-content">
+							<h4>Upload Edit & filters Images</h4>
+							<p>Say hello to Image Upload, Editing, and Filters - your one-stop solution for creating
+								eye-catching posts. Seamlessly upload images directly to your posts. Crop, resize, and
+								rotate your images to fit your desired layout. Apply stunning filters to enhance your
+								photos and create a cohesive aesthetic.</p>
+						</div>
+					</div>
+					<div class="col-lg-6">
+						<div class="ps-editr-img">
+							<img src="assets/images/landing/e3.png" alt="">
+						</div>
+					</div>
+				</div>
+				<div class="row gy-4 align-items-center">
+					<div class="col-lg-6">
+						<div class="ps-editr-img">
+							<img src="assets/images/landing/e4.png" alt="">
+						</div>
+					</div>
+					<div class="col-lg-6">
+						<div class="ps-editr-content">
+							<h4>Use Unlimited Shapes</h4>
+							<p>Bring your creative ideas to life with a versatile set of shapes. With this feature, the
+								possibilities are endless, and your posts will be more dynamic and eye-catching than
+								ever. Stand out from the crowd and craft engaging content that resonates with your
+								audience. </p>
+						</div>
+					</div>
+				</div>
+				<div class="row gy-4 align-items-center">
+					<div class="col-lg-6">
+						<div class="ps-editr-content">
+							<h4>Filters Images</h4>
+							<p>Elevate your visual game and give your photos a fresh, exciting look. With a wide range
+								of filters to choose from, you can transform your images into stunning works of art. Get
+								started today and create eye-catching, shareable content that your audience will love.
+								It's time to let your creativity shine!</p>
+						</div>
+					</div>
+					<div class="col-lg-6">
+						<div class="ps-editr-img">
+							<img src="assets/images/landing/e5.png" alt="">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Editor Section End -->
+
+	<!-- Feature Box Section Start -->
+	<section class="ps-feature-box-wrapper" id="feature">
+		<div class="container">
+			<div class="ps-feature-box-heading">
+				<h1>our countless key features</h1>
+			</div>
+			<div class="ps-feature-box-parent">
+				<div class="row gy-4 justify-content-center">
+					<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="ps-feature-box-inner">
+							<img src="assets/images/landing/fb1.png" alt="">
+							<p>User Dashboard</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="ps-feature-box-inner">
+							<img src="assets/images/landing/fb4.png" alt="">
+							<p>Assets Management</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="ps-feature-box-inner">
+							<img src="assets/images/landing/fb5.png" alt="">
+							<p>Create & Customize post</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="ps-feature-box-inner">
+							<img src="assets/images/landing/fb6.png" alt="">
+							<p>Post Analytics</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="ps-feature-box-inner">
+							<img src="assets/images/landing/fb7.png" alt="">
+							<p>Social Media Integration</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="ps-feature-box-inner">
+							<img src="assets/images/landing/fb8.png" alt="">
+							<p>Schedule Post</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="ps-feature-box-inner">
+							<img src="assets/images/landing/fb9.png" alt="">
+							<p>Post Calendar</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="ps-feature-box-inner">
+							<img src="assets/images/landing/fb10.png" alt="">
+							<p>Image Creator</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="ps-feature-box-inner">
+							<img src="assets/images/landing/fb11.png" alt="">
+							<p>User Friendly Design</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<!-- Feature Box Section End -->
+
+	<!-- Pricing Plan Section Start -->
+	<div class="ps-pricing-wrapper" id="plans">
+		<div class="container">
+			<div class="ps-feature-box-heading">
+				<h1>select the perfect plan for you</h1>
+			</div>
+			<!-- Monthly Plan -->
+			<div id="monthlyPlan" class="ps-plans-table">
+				<!-- <div class="ps-switch-toggle ">
+					<span>Month	</span>
+					<div class='d-flex align-items-center justify-content-center'>
+						<label class="switch">
+							<input type="checkbox">
+							<span class="slider round"></span>
+						</label>
+					</div>
+					<span>Year</span>
+
+				</div> -->
+				<div class="row gy-4" id="showPlans">
+
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Pricing Plan Section End -->
+
+	<!-- Testimonail Section Start -->
+	<section class="ps-temnl-wrapper">
+		<div class="container">
+			<div class="ps-tsmnl-heading">
+				<img src="assets/images/landing/rating.png" alt="">
+				<h1>Don't take our word for it. trust our Customer's</h1>
+			</div>
+			<div class="row gy-4">
+				<div class="col-lg-4 col-md-6">
+					<div class="ps-tesmnl-box">
+						<div class="ps-tesmnl-inner">
+							<div class="ps-tesmnl-head-flex">
+								<img src="assets/images/landing/client1.jpg" alt="">
+								<div class="ps-tesmnl-clnt-info">
+									<h4>esther howard</h4>
+									<p>UI / UX design</p>
+								</div>
+							</div>
+							<p>Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a
+								piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard
+								McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of
+								the more obscure Latin words, consectetur, from a Lorem Ipsum passage.</p>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-4 col-md-6">
+					<div class="ps-tesmnl-box">
+						<div class="ps-tesmnl-inner">
+							<div class="ps-tesmnl-head-flex">
+								<img src="assets/images/landing/client2.jpg" alt="">
+								<div class="ps-tesmnl-clnt-info">
+									<h4>darell steward</h4>
+									<p>UI / UX design</p>
+								</div>
+							</div>
+							<p>Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a
+								piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard
+								McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of
+								the more obscure Latin words, consectetur, from a Lorem Ipsum passage.</p>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-4 col-md-6">
+					<div class="ps-tesmnl-box">
+						<div class="ps-tesmnl-inner">
+							<div class="ps-tesmnl-head-flex">
+								<img src="assets/images/landing/client5.png" alt="">
+								<div class="ps-tesmnl-clnt-info">
+									<h4>cody fisher</h4>
+									<p>UI / UX design</p>
+								</div>
+							</div>
+							<p>Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a
+								piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard
+								McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of
+								the more obscure Latin words, consectetur, from a Lorem Ipsum passage.</p>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-4 col-md-6">
+					<div class="ps-tesmnl-box">
+						<div class="ps-tesmnl-inner">
+							<div class="ps-tesmnl-head-flex">
+								<img src="assets/images/landing/client4.png" alt="">
+								<div class="ps-tesmnl-clnt-info">
+									<h4>wade warren</h4>
+									<p>UI / UX design</p>
+								</div>
+							</div>
+							<p>Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a
+								piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard
+								McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of
+								the more obscure Latin words, consectetur, from a Lorem Ipsum passage.</p>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-4 col-md-6">
+					<div class="ps-tesmnl-box">
+						<div class="ps-tesmnl-inner">
+							<div class="ps-tesmnl-head-flex">
+								<img src="assets/images/landing/client5.png" alt="">
+								<div class="ps-tesmnl-clnt-info">
+									<h4>Darren Joe</h4>
+									<p>UI / UX design</p>
+								</div>
+							</div>
+							<p>Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a
+								piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard
+								McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of
+								the more obscure Latin words, consectetur, from a Lorem Ipsum passage.</p>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-4 col-md-6">
+					<div class="ps-tesmnl-box">
+						<div class="ps-tesmnl-inner">
+							<div class="ps-tesmnl-head-flex">
+								<img src="assets/images/landing/client1.jpg" alt="">
+								<div class="ps-tesmnl-clnt-info">
+									<h4>annette black</h4>
+									<p>UI / UX design</p>
+								</div>
+							</div>
+							<p>Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a
+								piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard
+								McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of
+								the more obscure Latin words, consectetur, from a Lorem Ipsum passage.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<!-- Testimonail Section End -->
+
+	<!-- Footer Section Start -->
+	<footer class="ps-footer-wrapper">
+		<div class="container">
+			<div class="ps-footer-inner">
+				<div class="ps-footer-logo">
+					<a href="index.html"><img src="assets/images/Logo.png" alt=""></a>
+				</div>
+				<div class="ps-footer-heading">
+					<h1>What are you waiting for?</h1>
+					<p>Easily Schedule Your Social Media Posts With PixaSocial.</p>
+				</div>
+				<div class="ps-footer-btn">
+					<a href="#plans" class="ps-btn">buy now <img src="assets/images/landing/btn-arrow.png" alt=""> </a>
+				</div>
+				<div class="ps-copyright">
+					<p>© Copyright 2023. All Rights Reserved</p>
+				</div>
+			</div>
+		</div>
+	</footer>
+	<!-- Footer Section End -->
+
+	<!--=== Optional JavaScript ===-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.0.1/js/bootstrap.min.js"
+		crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"
+		crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/smooth-scroll/16.1.3/smooth-scroll.min.js"
+		crossorigin="anonymous"></script>
+	<script src="assets/js/custom.js"></script>
+	<!--=== Optional JavaScript ===-->
+
+</body>
+
+</html>
