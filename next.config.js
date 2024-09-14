@@ -30,13 +30,15 @@ const nextConfig = {
     TOKEN_LIFE: "24h",
 
     //Mongodb Details
-    DB_URL: ``,
+    DB_URL: `mongodb+srv://schedlyticAdmin:yao4iFlo1AFcMeTC@cluster0.e1a8r.mongodb.net/schedlyticDB?retryWrites=true&w=majority
+`,
+             
 
     //ChatGPT API details
     OPENAI_API_KEY: "",
 
     //S3 Bucket Details
-    SECRET_ACCESS_KEY: "",
+    SECRET_ACCESS_KEY: "",    
     ACCESS_KEY_ID: "",
     REGION: "",
     MAX_UPLOAD_SIZE: "1*1024*1024*1024",
