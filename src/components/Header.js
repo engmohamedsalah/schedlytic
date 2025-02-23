@@ -70,18 +70,18 @@ let Header = () => {
         router.push(data);
         storeData.updateStoreData("postData", {})
     }
-
+console.log({userData})
     return (
         <>
             <div className='rz_mainHeader'>
                 <div className='ps_conatiner-fluid'>
                     <div className='row align-items-center'>
-                        <div className='col-md-2 col-2'>
+                        <div className='col-lg-2 col-md-4 col-6'>
                             <div className='rz_logo'>                             
-                                    <span>   <img src={process.env.APP_LOGO} alt="" /></span>
+                                    <span className='ps_logo_header'> <img src={(userData.adminprofileUrl)?userData.adminprofileUrl:process.env.APP_LOGO} alt="" /></span>
                             </div>
                         </div>
-                        <div className='col-md-8 px-0 col-8'>
+                        <div className='col-lg-8 col-md-6 px-0 col-4'>
                             <div expand="lg" className="rz_navMenu">
                                 <div className='rz_nav_box'>
                                     <div className={`rz_menuOverlay ${state.toggleBtn == true ? 'rz_show' : 'rz_hide'}`}
@@ -195,6 +195,13 @@ let Header = () => {
                                                                 <span>{svg.app.integration}</span>Integrations
                                                             </a>
                                                         </li>
+                                                        <li>
+                                                            <a onClick={(e) => {
+                                                                changePage(e, "/getdraft")
+                                                            }} className={isActive("/getdraft") ? "nav-link active" : "nav-link "}>
+                                                                <span>{svg.app.Plan_icon}</span>Drafts
+                                                            </a>
+                                                        </li>
                                                         
                                                     </> : ""
                                             }
@@ -209,13 +216,7 @@ let Header = () => {
                                                                 <span>{svg.app.myReels}</span>Templates
                                                             </a>
                                                         </li>
-                                                        <li>
-                                                            <a onClick={(e) => {
-                                                                changePage(e, "/admin/assets")
-                                                            }} className={isActive("/admin/assets") ? "nav-link active" : "nav-link "}>
-                                                                <span>{svg.app.categories}</span>Assets
-                                                            </a>
-                                                        </li>
+                                                      
                                                     </>
                                                     : "" }
 
@@ -229,7 +230,7 @@ let Header = () => {
                             <p className='rz_note_for_demo'><b>Note: </b>Feel free to test all the features before purchasing, keep in mind that some features are disabled in Demo mode.</p>
                             }
                             </div>
-                        <div className='col-md-2 col-2'>
+                        <div className='col-lg-2 col-md-2 col-2'>
                             <div className='rz_rightHeader'>
 
 
@@ -246,7 +247,9 @@ let Header = () => {
                                                         changePage(e, "/profile")
                                                     }}>My Account</a></li>
 
-                                                   
+                                                                {userData?.role=='User'&& <li><a className='rz_listMenu' onClick={(e) => {
+                                                        changePage(e, "/myplans")
+                                                    }}>My plans</a></li>  }                                
                                                     <li>
                                                         <a className='rz_listMenu' disabled onClick={() => {
                                                             logout(() => {
@@ -255,7 +258,7 @@ let Header = () => {
                                                                 storeData.updateStoreData('editorData', []);
                                                                 storeData.updateStoreData('postData', {});
                                                                 storeData.updateStoreData('multiPostData', []);
-                                                                router.push('/login');
+                                                                // router.push('/login');
                                                             })
                                                         }}>
                                                             Logout

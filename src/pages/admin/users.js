@@ -353,7 +353,6 @@ export default function User() {
                                             <th>S.No.</th>
                                             <th>User Name </th>
                                             <th>Email</th>
-                                        
                                             <th>Account Status </th>
                                             <th>Actions</th>
                                         </tr>

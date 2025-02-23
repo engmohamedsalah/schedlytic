@@ -4,39 +4,61 @@ import { NoDataWrapper, common } from '@/components/Common';
 import { useLinkedIn } from "react-linkedin-login-oauth2";
 import ConfirmationPopup from "../common/ConfirmationPopup";
 import {getNameInitials} from "@/components/utils/utility"
+import { appStore } from '@/zu_store/appStore';
+
 
 export default function AddSocailAccount() {
-	const [selectedAcc, setSelectedAcc] = useState("Facebook")
 	const [facebookDetails, setFacebookDetails] = useState([])
 	const [linkedInDetails, setLinkedInDetails] = useState([])
 	const [instagramDetails, setInstagramDetails] = useState([])
+	const [googleDetails, setgoogleDetails]=useState([])
 	const [twitterDetails, setTwitterDetails] = useState([])
 	const [pinterestDetails, setPinterestDetails] = useState([])
 	const [isRemoveAction, setIsRemoveAction] = useState(false);
 	const [isRemoveActionIndex, setIsRemoveActionIndex] = useState(false);
 	const [deleteAcc, setDeleteAcc] = useState();
+	// console.log(userData?.plan)
 	const [isLoading, setIsLoading] = useState(false)
+	
+
+	useEffect(() => {
+    setTimeout(() => {
+      let d1 = document.querySelector(".rz_platform_box");
+      if (d1) {
+        d1.click();
+      }
+    }, 100);
+  }, []);
+    let myStore = appStore(state => state);
+    let userData = myStore.userData;
+	const [selectedAcc, setSelectedAcc] = useState("")
+	console.log("userData",userData)
 
 	const selectAccount = (name) => {
 		setSelectedAcc(name)
 	}
 
 	const openLoginPAge = (accName) => {
+		console.log({accName})
 		if (accName === "Facebook") {
 			facebookLogin();
 		} else if (accName === "Instagram") {
 			instagramLogin();
 		}
-		else if (accName === "LinkedIn") {
+		else if (accName === "Linkedin") {
+			console.log("1234")
 			linkedInLogin();
 		}
 		else if (accName === "Pinterest") {
 			pinterestLogin();
+		} else if(accName=="Youtube"){
+			googleLogin()
 		}
 	}
 
 	useEffect(() => {
 		getSocialAccounts()
+		
 	}, [])
 
 	useEffect(() => {
@@ -65,6 +87,32 @@ export default function AddSocailAccount() {
 	}, []);
 
 
+	const googleLogin=()=>{
+
+		common.getAPI({
+			method: 'GET',
+			url: 'social',
+			data: {
+				action: "getGoogleLink"
+			},
+
+		}, (resp) => {
+			if (resp) {
+                let openWindow = window.open(resp.data.url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+               
+				let popupTick = setInterval(function() {
+                    if (openWindow.closed) {
+						console.log("clear h ")
+                        clearInterval(popupTick);
+                        setTimeout(() => {
+							getSocialAccounts()
+                        }, 200);
+                    }
+                }, 500);
+            }
+		})
+		
+	}
 	const getSocialAccounts = () => {
 		setIsLoading(true)
             common.getAPI({
@@ -78,6 +126,7 @@ export default function AddSocailAccount() {
 				setIsLoading(false)
 				if (resp.status) {
 					Object.keys(resp.data).map(val => {
+						console.log({val})
 						if (val === "facebook") {
 							setFacebookDetails(resp.data[val])
 						} else if (val === "linkedin") {
@@ -88,6 +137,8 @@ export default function AddSocailAccount() {
 							setPinterestDetails(resp.data[val])
 						} else if (val === "instagram") {
 							setInstagramDetails(resp.data[val])
+						} else if (val ==="youtube"){
+							setgoogleDetails(resp.data[val])
 						}
 					})
 				}
@@ -138,7 +189,6 @@ export default function AddSocailAccount() {
 }
 
 	const facebookLogin = () => {
-
 		window.FB.login(function (response) {
 			if (response.status == "connected") {
 				let authresponse = response.authResponse;
@@ -184,7 +234,7 @@ export default function AddSocailAccount() {
 				window.FB.api(path, method, params, callback);
 			}
 		}, {
-			scope: "email,manage_fundraisers,read_insights,publish_video,catalog_management,pages_manage_cta,pages_manage_instant_articles,pages_show_list,read_page_mailboxes,ads_management,ads_read,business_management,pages_messaging,pages_messaging_subscriptions,instagram_basic,instagram_manage_comments,instagram_manage_insights,instagram_content_publish,leads_retrieval,whatsapp_business_management,instagram_manage_messages,page_events,pages_read_engagement,pages_manage_metadata,pages_read_user_content,pages_manage_ads,pages_manage_posts,pages_manage_engagement,whatsapp_business_messaging,instagram_shopping_tag_products",
+			scope: "email,pages_manage_posts,pages_show_list,pages_read_engagement,business_management,instagram_basic,instagram_content_publish",
 		});
 		getSocialAccounts()
 	}
@@ -254,7 +304,7 @@ export default function AddSocailAccount() {
 				}
 			},
 			{
-				scope: "email,pages_show_list,pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish",
+				scope: "email,pages_manage_posts,pages_show_list,pages_read_engagement,business_management,instagram_basic,instagram_content_publish",
 			}
 		);
 	}
@@ -281,6 +331,7 @@ export default function AddSocailAccount() {
 			);
 		},
 		onError: (error) => {
+		console.log({error})
 		},
 	});
 
@@ -324,6 +375,7 @@ export default function AddSocailAccount() {
 					},
 				},
 				(resp) => {
+					console.log("response",resp.data)
 					if (resp.data.items && resp.data.items.length) {
 						let pageList = [];
 						resp.data.items.forEach((p) => {
@@ -404,13 +456,18 @@ export default function AddSocailAccount() {
 		if (acc.type === "facebook") {
 			facebookLogin();
 		} else if (acc.type === "linkedin") {
+			try{
+				console.log("11111")
 			linkedInLogin();
+			}catch(e){
+				console.log({e})
+			}
 		} else if (acc.type === "pinterest") {
 			pinterestLogin();
 		} else if (acc.type === "instagram") {
 			instagramLogin();
-		} else if (acc.type === "Twitter") {
-
+		} else if (acc.type === "youtube") {
+			googleLogin()
 		}
 	} 
 
@@ -427,8 +484,10 @@ export default function AddSocailAccount() {
 			data = instagramDetails
 		} else if (selectedAcc === "Twitter") {
 			data = twitterDetails
-		}
-
+		} else if(selectedAcc =="Youtube"){
+				data=googleDetails
+			}
+			console.log({data})
 		if (data.length > 0) {
 			return <>
 				{data.length > 0 && data.map((acc, i) => {
@@ -492,8 +551,17 @@ export default function AddSocailAccount() {
 			twitterDetails.splice(isRemoveActionIndex, 1)
 			setTwitterDetails([...twitterDetails])
 			setIsRemoveActionIndex(false)
+		} else if(selectedAcc === "Youtube"){
+			googleDetails.splice(isRemoveActionIndex, 1)
+			setTwitterDetails([...googleDetails])
+			setIsRemoveActionIndex(false)
 		}
 	}
+
+
+    const check=(social)=>{
+        return userData?.plan?.socialIntregation?.includes(social)
+    }
 
 
 	return (
@@ -512,40 +580,52 @@ export default function AddSocailAccount() {
 						<div className="row">
 							<div className='col-lg-3 col-md-4 '>
 								<div className="rz_socail_platform_bg ">
-									<div className="rz_socail_platform">
+									{check("facebook")&&<div className="rz_socail_platform">
 										<div className={`rz_platform_box  ${selectedAcc === "Facebook" ? 'active_social_account' : ""}`} style={{ background: "#DBE3FF" }} onClick={() => selectAccount("Facebook")}>
 											<div className="dash_icon_box" style={{ "background": "#1877F2" }}>
 												{svg.app.facebook}
 											</div>
 											<h6 className='mr-auto'>Facebook</h6>
 										</div>
-									</div>
-									<div className="rz_socail_platform">
+									</div>}
+									{check("instagram")&&<div className="rz_socail_platform">
 										<div className={`rz_platform_box  ${selectedAcc === "Instagram" ? 'active_social_account' : ""}`} style={{ background: "#FFE3F5" }} onClick={() => selectAccount("Instagram")}>
 											<div className="dash_icon_box" style={{ "background": "#E4405F" }}>
 												{svg.app.instagram}
 											</div>
 											<h6 className='mr-auto'>Instagram</h6>
 										</div>
-									</div>
-									<div className="rz_socail_platform">
-										<div className={`rz_platform_box  ${selectedAcc === "LinkedIn" ? 'active_social_account' : ""}`} style={{ background: "#D2E9FF" }} onClick={() => selectAccount("LinkedIn")}>
+									</div>}
+									{check("linkedin")&&<div className="rz_socail_platform">
+										<div className={`rz_platform_box  ${selectedAcc === "Linkedin" ? 'active_social_account' : ""}`} style={{ background: "#D2E9FF" }} onClick={() => selectAccount("Linkedin")}>
 											<div className="dash_icon_box" style={{ "background": "#0A66C2" }}>
 												{svg.app.linkedin}
 											</div>
-											<h6 className='mr-auto'>LinkedIn</h6>
+											<h6 className='mr-auto'>Linkedin</h6>
 										</div>
-									</div>
-									<div className="rz_socail_platform">
+									</div>}
+									{check("pinterest")&&<div className="rz_socail_platform">
 										<div className={`rz_platform_box  ${selectedAcc === "Pinterest" ? 'active_social_account' : ""}`} style={{ background: "#FFE2E4" }} onClick={() => selectAccount("Pinterest")}>
 											<div className="dash_icon_box" style={{ "background": "#BD081C" }}>
 												{svg.app.pinterst}
 											</div>
 											<h6 className='mr-auto'>Pinterest</h6>
 										</div>
-									</div>
+									</div>}
+									{check("youtube")&&<div className="rz_socail_platform">
+										<div className={`rz_platform_box  ${selectedAcc === "Youtube" ? 'active_social_account' : ""}`} style={{ background: "#FFE2E4" }} onClick={() => selectAccount("Youtube")}>
+											<div className="dash_icon_box" style={{ "background": "red" }}>
+												{svg.app.youtube}
+											</div>
+											<h6 className='mr-auto'>Youtube</h6>
+										</div>
+									</div>}
 								</div>
 							</div>
+							{
+								console.log("selectedAcc",selectedAcc)
+							
+							}
 							{selectedAcc ? <div className="col-lg-9 col-md-8 mt-md-0 mt-3 ">
 								<div className="rz_socail_platform_bg  ">
 									<div className="text-center ">
@@ -563,6 +643,9 @@ export default function AddSocailAccount() {
 											openLoginPAge(selectedAcc) 
 											}} >Add New Account +</a></div>
 									</div>
+									{selectedAcc === "Youtube" && 
+									<div className="ps_youtube_warning">{svg.app.warningIcon}<h6>Before creating an account in YouTube, you will have to verify your account with Google.</h6></div>
+									}
 								</div>
 							</div> : ""}
 						</div>
@@ -593,3 +676,7 @@ export default function AddSocailAccount() {
 		</>
 	)
 }
+
+
+
+

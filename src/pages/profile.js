@@ -5,6 +5,8 @@ import { common, setMyState } from '../components/Common';
 import { toast } from 'react-toastify';
 import { appStore } from '@/zu_store/appStore';
 import { checkPassword } from '@/components/utils/utility';
+import AdminSetting from '../pages/admin/adminSetting';
+
 
 export default function Profile() {
     const [isResetPassword, setIsResetPassword] = useState(false)
@@ -12,6 +14,19 @@ export default function Profile() {
     useEffect(() => {
         getUser()
     }, [])
+
+    const [ToggleState, setToggleState] = useState(1);
+   
+
+    const toggleTab = (index) => {
+        setToggleState(index);
+    };
+
+   
+
+    const getActiveClass = (index, className) =>
+        ToggleState === index ? className : "";
+
 
 
     let [state, setstate] = useState({
@@ -43,24 +58,23 @@ export default function Profile() {
                 action: "getUser"
             },
         }, (resp) => {
-            try{
-            let data = resp.data
-            userData["name"]=data.name
-            if(data?.profile!="null")
-            {
-                userData['profile'] = process.env.S3_PATH + data.profile
+            try {
+                let data = resp.data
+                userData["name"] = data.name
+                if (data?.profile != "null") {
+                    userData['profile'] = process.env.S3_PATH + data.profile
+                }
+                myStore.updateStoreData("userData", userData)
+                setstate({
+                    ...state,
+                    name: data.name,
+                    lastname: data.lastname,
+                    email: data.email,
+                    contactNumber: data.contactNumber,
+                    plan: resp?.plan?.name ? resp.plan.name : "",
+                })
+            } catch (e) {
             }
-            myStore.updateStoreData("userData", userData)
-            setstate({
-                ...state,
-                name: data.name,
-                lastname: data.lastname,
-                email: data.email,
-                contactNumber: data.contactNumber,
-                plan: resp?.plan?.name ? resp.plan.name : "",
-            })
-        }catch(e){
-        }
         });
     }
 
@@ -114,7 +128,7 @@ export default function Profile() {
 
     const CheckPassword = (inputtxt) => {
         if (inputtxt.match(checkPassword)) {
-            return true;
+            return true;    
         }
         else {
             return false;
@@ -122,8 +136,8 @@ export default function Profile() {
     }
 
     const uploadProfile = async (e) => {
-        if (e.target?.files[0]?.type == "image/jpeg" || e.target?.files[0]?.type == "image/png") {
-            let selectedFile = e.target.files[0];
+        if (e.target?.files[0]?.type == "image/jpeg" || e.target?.files[0]?.type == "image/png") {  
+            let selectedFile = e.target.files[0];   
 
             let data = new FormData();
             data.append("file", selectedFile, selectedFile.name);
@@ -133,6 +147,7 @@ export default function Profile() {
                 data: data,
                 isFormData: true,
             }, (resp) => {
+                console.log("profile",resp.data.profile)
                 userData['profile'] = process.env.S3_PATH + resp.data.profile
                 myStore.updateStoreData("userData", userData)
             });
@@ -153,70 +168,94 @@ export default function Profile() {
             </Head>
             <div className='rz_dashboardWrapper' >
                 <div className="ps_min_conatiner">
-                    <div className=' welcomeWrapper'>
-                        <div className="dash_header ">
-                            <h2>Profile Settings</h2>
-                        </div>
-                        <div className='rz_tabContent'>
-                            <div className='rz_tabPanel' tabid="1">
-                                <div className=''>
-                                    <form className='ps_pro'>
-                                        <div className='ps_profile_img_box'>
-                                            <div className='rz_custom_form_pro_box'>
-                                                <div className='rz_custom_form_pro'>
-                                                    <span > <img src={userData?.profile ? userData?.profile : "../assets/images/default_pro.png"} /></span>
-                                                </div>
-                                                <div className=''>
-                                                    <div id="fileHelpId" className="form-text pb-3"><p>At least 125x125 px recommended</p> <p>jpeg or png image is allowed</p> </div>
-                                                    <label htmlFor="rz_uploadAudio" className='rz_uploadBtn ps-0'>
-                                                        <span className='ps_editor_back_button ms-md-0'>Upload Image</span>
-                                                        <input id='rz_uploadAudio' type='file' className='rz_customFile ' accept={"images"} onChange={(e) => uploadProfile(e)} />
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className='rz_socail_platform_bg  pt-md-4 pt-5 '>
-                                            <div className='ps_profile_box_bg pb-0'>
-                                                <div className='row'>
 
-                                                    <div className='col-md-6'>
-                                                        <div className="rz_custom_form">
-                                                            <label className="form-label"> First Name <span className="text-danger">*</span></label>
-                                                            <input value={state?.name} id="name" onChange={(e) => {
-                                                                change(e)
-                                                            }} name="full_name" type="text" className={`rz_customInput`}
-                                                                placeholder="Enter your first name" />
+                    <div className=' welcomeWrapper'>
+                        <div className='ps_admin_assets_tabs'>
+                            {(userData?.role!='User') && <div className="ps_min_conatiner">
+
+                                <ul className="tab-list">
+                                    <li
+                                        className={`tabs ${getActiveClass(1, "active-tabs")}`}
+                                        onClick={() => toggleTab(1)}
+                                    >
+                                        Profile Setting
+                                    </li>
+                                    <li
+                                        className={`tabs ${getActiveClass(2, "active-tabs")}`}
+                                        onClick={() => toggleTab(2)}
+                                    >
+                                        Admin Setting
+                                    </li>
+
+                                </ul>
+                            </div>}
+
+                            <div className="content-container">
+                                <div className={`content ${getActiveClass(1, "active-content")}`}>
+                                    <div className=' welcomeWrapper'>
+                                        <div className="dash_header ">
+                                            <h2>Profile Settings</h2>
+                                        </div>
+                                        <div className='rz_tabContent'>
+                                            <div className='rz_tabPanel' tabid="1">
+                                                <div className=''>
+                                                    <form className='ps_pro'>
+                                                        <div className='ps_profile_img_box'>
+                                                            <div className='rz_custom_form_pro_box'>
+                                                                <div className='rz_custom_form_pro'>
+                                                                    <span > <img src={(userData?.profile) ? userData?.profile : "../assets/images/default_pro.png"} /></span>
+                                                                </div>
+                                                                <div className=''>
+                                                                    <div id="fileHelpId" className="form-text pb-3"><p>At least 125x125 px recommended</p> <p>jpeg or png image is allowed</p> </div>
+                                                                    <label htmlFor="rz_uploadAudio" className='rz_uploadBtn ps-0'>
+                                                                        <span className='ps_editor_back_button ms-md-0'>Upload Image</span>
+                                                                        <input id='rz_uploadAudio' type='file' className='rz_customFile ' accept={"images"} onChange={(e) => uploadProfile(e)} />
+                                                                    </label>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className='col-md-6'>
-                                                        <div className="rz_custom_form">
-                                                            <label className='rz_label'>Last Name <span className="text-danger">*</span></label>
-                                                            <input id="lastname" value={state?.lastname || ""} onChange={(e) => {
-                                                                change(e)
-                                                            }} name="last_name" type="text" className={`rz_customInput`}
-                                                                placeholder="Enter your last name" />
-                                                        </div>
-                                                    </div>
-                                                    <div className='col-md-6'>
-                                                        <div className="rz_custom_form">
-                                                            <label className='rz_label'>Contact Number </label>
-                                                            <input id="contactNumber" value={state?.contactNumber || ""} onChange={(e) => {
-                                                                e.target.value = e.target.value.replace(/\D/g, '')
-                                                                change(e)
-                                                            }} name="contact" type="text" className={`rz_customInput`}
-                                                                placeholder="Enter your contact number" />
-                                                        </div>
-                                                    </div>
-                                                    <div className='col-md-6'>
-                                                        <div className="rz_custom_form">
-                                                            <label className='rz_label'>Email Address <span className="text-danger">*</span></label>
-                                                            <input id="email" value={state?.email} onChange={(e) => {
-                                                                change(e)
-                                                            }} disabled name="email" className={`rz_customInput`}
-                                                                placeholder="Enter your email address" />
-                                                        </div>
-                                                    </div>
-                                                    {/* {state.plan &&
+                                                        <div className='rz_socail_platform_bg  pt-md-4 pt-5 '>
+                                                            <div className='ps_profile_box_bg pb-0'>
+                                                                <div className='row'>
+
+                                                                    <div className='col-md-6'>
+                                                                        <div className="rz_custom_form">
+                                                                            <label className="form-label"> First Name <span className="text-danger">*</span></label>
+                                                                            <input value={state?.name} id="name" onChange={(e) => {
+                                                                                change(e)
+                                                                            }} name="full_name" type="text" className={`rz_customInput`}
+                                                                                placeholder="Enter your first name" />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className='col-md-6'>
+                                                                        <div className="rz_custom_form">
+                                                                            <label className='rz_label'>Last Name <span className="text-danger">*</span></label>
+                                                                            <input id="lastname" value={state?.lastname || ""} onChange={(e) => {
+                                                                                change(e)
+                                                                            }} name="last_name" type="text" className={`rz_customInput`}
+                                                                                placeholder="Enter your last name" />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className='col-md-6'>
+                                                                        <div className="rz_custom_form">
+                                                                            <label className='rz_label'>Contact Number </label>
+                                                                            <input id="contactNumber" value={state?.contactNumber || ""} onChange={(e) => {
+                                                                                e.target.value = e.target.value.replace(/\D/g, '')
+                                                                                change(e)
+                                                                            }} name="contact" type="text" className={`rz_customInput`}
+                                                                                placeholder="Enter your contact number" />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className='col-md-6'>
+                                                                        <div className="rz_custom_form">
+                                                                            <label className='rz_label'>Email Address <span className="text-danger">*</span></label>
+                                                                            <input id="email" value={state?.email} onChange={(e) => {
+                                                                                change(e)
+                                                                            }} disabled name="email" className={`rz_customInput`}
+                                                                                placeholder="Enter your email address" />
+                                                                        </div>
+                                                                    </div>
+                                                                    {/* {state.plan &&
                                                         <div className='col-md-6'>
                                                             <div className="rz_custom_form">
                                                                 <label className='rz_label'>Plan Name </label>
@@ -224,45 +263,57 @@ export default function Profile() {
                                                             </div>
                                                         </div>
                                                     } */}
-                                                    {isResetPassword ? <div className='ps_profile_password_box row'>
-                                                        <div className="ps_profile_icon_close_btn" onClick={() => togglePassword()}> {svg.app.closeIcon}</div>
-                                                        <div className='col-md-6 pb-md-0 pb-3'>
-                                                            <div className="rz_custom_form mt-0">
-                                                                <label className='rz_label'>New Password</label>
-                                                                <input id="password" value={state?.password || ""} name="password" onChange={(e) => {
-                                                                    change(e)
-                                                                }} type="password" className={`rz_customInput`}
-                                                                    placeholder="Enter your new password" />
+                                                                    {isResetPassword ? <div className='ps_profile_password_box row'>
+                                                                        <div className="ps_profile_icon_close_btn" onClick={() => togglePassword()}> {svg.app.closeIcon}</div>
+                                                                        <div className='col-md-6 pb-md-0 pb-3'>
+                                                                            <div className="rz_custom_form mt-0">
+                                                                                <label className='rz_label'>New Password</label>
+                                                                                <input id="password" value={state?.password || ""} name="password" onChange={(e) => {
+                                                                                    change(e)
+                                                                                }} type="password" className={`rz_customInput`}
+                                                                                    placeholder="Enter your new password" />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className='col-md-6'>
+                                                                            <div className="rz_custom_form mt-0">
+                                                                                <label className='rz_label'>Confirm Password</label>
+                                                                                <input id="confirmpassword" value={state?.confirmpassword || ""} onChange={(e) => {
+                                                                                    change(e)
+                                                                                }} name="conf_password" type="password" className={`rz_customInput`}
+                                                                                    placeholder="Enter your confirm password" />
+                                                                            </div>
+                                                                        </div>
+
+
+
+                                                                    </div> : ""}
+                                                                    <div className='d-flex justify-content-start'>
+                                                                        <div className='mt-4 mx-1'><button disabled={process.env.TYPE == "demo" ? true : false} onClick={(e) => { updateDetails(e) }} className="rz_btn"><span>Update</span></button></div>
+                                                                        {!isResetPassword ? <div className='mt-4'><button onClick={() => setIsResetPassword(true)} className="rz_addAccBtn_blk"><span>Reset Password</span></button></div> : ""}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div className='col-md-6'>
-                                                            <div className="rz_custom_form mt-0">
-                                                                <label className='rz_label'>Confirm Password</label>
-                                                                <input id="confirmpassword" value={state?.confirmpassword || ""} onChange={(e) => {
-                                                                    change(e)
-                                                                }} name="conf_password" type="password" className={`rz_customInput`}
-                                                                    placeholder="Enter your confirm password" />
-                                                            </div>
-                                                        </div>
-
-
-
-                                                    </div> : ""}
-                                                    <div className='d-flex justify-content-start'>
-                                                        <div className='mt-4 mx-1'><button disabled={process.env.TYPE == "demo" ? true : false} onClick={(e) => { updateDetails(e) }} className="rz_btn"><span>Update</span></button></div>
-                                                        {!isResetPassword ? <div className='mt-4'><button onClick={() => setIsResetPassword(true)} className="rz_addAccBtn_blk"><span>Reset Password</span></button></div> : ""}
-                                                    </div>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
-                                    </form>
+                                    </div>
                                 </div>
+                                <div className={`content ${getActiveClass(2, "active-content")}`}>
+                                   <AdminSetting />
+                                </div>
+
+
                             </div>
+
                         </div>
                     </div>
-
                 </div>
-            </div>
+
+
+                {/* </div> */}
+            </div >
         </>
     )
 }

@@ -25,12 +25,14 @@ export default function SelectSocailAccount() {
     const [selectedFbAccPages, setSelectedFbAccPages] = useState([]);
     const [selectedFbAcc, setSelectedFbAcc] = useState();
     const [selectedInstaAcc, setSelectedInstaAcc] = useState();
+    const [selectedGoogleAcc, setSelectedGoogleAcc] = useState();
     const [selectedTwitterAcc, setSelectedTwitterAcc] = useState();
     const [selectedLinkedInAcc, setSelectedLinkedInAcc] = useState();
     const [selectedPinterestAcc, setSelectedPinterestAcc] = useState();
     const [facebookDetails, setFacebookDetails] = useState([]);
     const [instaDetails, setInstaDetails] = useState([]);
     const [linkedInDetails, setLinkedInDetails] = useState([]);
+    const [googleDetails , setGoogleDetails]=useState([])
     const [twitterDetails, setTwitterDetails] = useState([]);
     const [pinterestDetails, setPinterestDetails] = useState([]);
     const [selectedSocialAcc, setSelectedSocialAcc] = useState({});
@@ -65,7 +67,8 @@ export default function SelectSocailAccount() {
         isInsta: false,
         isLinkedIn: false,
         isTwitter: false,
-        isPinterest: false
+        isPinterest: false,
+        isGoogle : false,
     });
 
     const router = useRouter();
@@ -144,6 +147,7 @@ export default function SelectSocailAccount() {
 
     const handleSelectedAccData = (accounts) => {
         if (accounts.length > 0) {
+            console.log({accounts})
             accounts.map((acc, index) => {
                 if (acc.type === "facebook") {
                     let data = {
@@ -185,7 +189,17 @@ export default function SelectSocailAccount() {
                     setSelectedPinterestBoard(acc.data.boardList)
                     setSelectedPinterestAccDetails(acc)
                     handleEditPostCheckbox(acc)
+                } else if(acc.type=="youtube"){
+                    let data = {
+                        obj: acc,
+                        index: index
+                    }
+                    console.log({data})
+                    setSelectedGoogleAcc(data)
+                    handleEditPostCheckbox(acc)
+                    
                 }
+                console.log(acc.type,"acounts")
             })
         }
     }
@@ -284,6 +298,22 @@ export default function SelectSocailAccount() {
 
                         }
                         setInstaDetails(resp.data[val])
+                    }  else if (val === "youtube") {
+                        let index;
+                        if (selectedAccounts.length > 0) {
+                            selectedAccounts.map((selectedAcc) => {
+                                if (selectedAcc.type === "youtube") {
+                                    index = resp.data[val]?.findIndex(acc => acc._id === selectedAcc._id)
+
+                                }
+                            })
+                            if (typeof index === "number") {
+                                resp.data[val].splice(index, 1)
+
+                            }
+
+                        }
+                        setGoogleDetails(resp.data[val])
                     }
                 })
                 handleSelectedAccData(resp.data)
@@ -354,6 +384,7 @@ export default function SelectSocailAccount() {
     }
 
     const handleSocialAccSelection = (val, index, name) => {
+        console.log({name})
         if (name === "Facebook") {
             setSelectedFbAccDetails(val)
             facebookDetails.splice(index, 1)
@@ -452,6 +483,26 @@ export default function SelectSocailAccount() {
             setSelectedPinterestAcc(data)
             accordianToggle.isPinterest = !accordianToggle?.isPinterest
             setAccordianToggle({ ...accordianToggle })
+        } else if(name ==="Youtube"){
+            googleDetails.splice(index, 1)
+            setGoogleDetails([...googleDetails])
+            if (selectedGoogleAcc) {
+                console.log({socialAccounts})
+                socialAccounts['youtube']?.map((googled, i) => {
+                    if (googled._id === selectedGoogleAcc.obj._id) {
+                        googleDetails.splice(i, 0, selectedGoogleAcc.obj)
+                        console.log({googleDetails})
+                        setGoogleDetails([...googleDetails])
+                    }
+                })
+            }
+            let data = {
+                obj: val,
+                index: index
+            }
+            setSelectedGoogleAcc(data)
+            accordianToggle.isGoogle = !accordianToggle?.isGoogle
+            setAccordianToggle({ ...accordianToggle })
         }
     }
 
@@ -508,6 +559,16 @@ export default function SelectSocailAccount() {
                 }
             }
             setSelectedSocialAcc(selectedAccMap)
+        } else if (acc.obj.type === "youtube") {
+            googleDetails.splice(acc.index, 0, acc.obj)
+            setGoogleDetails([...googleDetails])
+            setSelectedGoogleAcc("")
+            for (const key in selectedAccMap) {
+                if (key === acc.obj.type) {
+                    delete selectedAccMap[key]
+                }
+            }
+            setSelectedSocialAcc(selectedAccMap)
         }
     }
 
@@ -549,6 +610,9 @@ export default function SelectSocailAccount() {
             setAccordianToggle({ ...accordianToggle })
         } else if (acc === "pinterest") {
             accordianToggle.isPinterest = !accordianToggle?.isPinterest
+            setAccordianToggle({ ...accordianToggle })
+        } else if(acc === "youtube"){
+            accordianToggle.isGoogle = !accordianToggle?.isGoogle
             setAccordianToggle({ ...accordianToggle })
         }
     }
@@ -876,7 +940,10 @@ export default function SelectSocailAccount() {
                     selectedSocialAcc["linkedin"] = selectedSocialAcc["linkedin"].data
                     data.push(selectedSocialAcc["linkedin"].data)
                 }
-
+                if (key === "youtube" && selectedSocialAcc["youtube"].checked) {
+                    selectedSocialAcc["youtube"] = selectedSocialAcc["youtube"].data
+                    data.push(selectedSocialAcc["youtube"].data)
+                }
                 if (key === "twitter" && selectedSocialAcc["twitter"].checked) {
                     selectedSocialAcc["twitter"] = selectedSocialAcc["twitter"].data
                     data.push(selectedSocialAcc["twitter"].data)
@@ -1053,6 +1120,12 @@ export default function SelectSocailAccount() {
         }
         return d1[value]
     }
+
+    const check=(social)=>{
+        console.log("99999",userData?.plan?.socialIntregation,social)
+        return userData?.plan?.socialIntregation?.includes(social)
+    }
+
     const showMultipost = () => {
         return <div className="ps_schedule_box  " >
 
@@ -1156,7 +1229,7 @@ export default function SelectSocailAccount() {
                                             <p>All scheduled posts will be posted on selected social media platforms </p>
                                         </div>
                                         <div className="ps_create_post_accordian_space">
-                                            <div>
+                                            {check("facebook") &&<div>
                                                 <div className="px_social_accordian_box ">
                                                     <div className="px_social_accordian_icon_boxabso">
                                                         <div className='rz_acc_card_pro_box ppy' style={{ "background": "#1877F2" }}> {svg.app.facebook}</div>
@@ -1231,10 +1304,10 @@ export default function SelectSocailAccount() {
                                                         />
                                                     </div>
                                                 </div> : ""}
-                                            </div>
+                                            </div>}
 
 
-                                            <div className="px_social_accordian_box">
+                                            {check("instagram")&&<div className="px_social_accordian_box">
                                                 <div className="px_social_accordian_icon_boxabso"><div className='rz_acc_card_pro_box ppy' style={{ "background": "#E4405F" }}> {svg.app.instagram}</div></div>
                                                 <div className="ps_accordion">
                                                     <div className="ps_accordian_div" onClick={() => handleToggle("instagram")} >
@@ -1282,9 +1355,10 @@ export default function SelectSocailAccount() {
                                                         onChange={(e) => handleCheckbox(selectedInstaAcc, e.target.checked)}
                                                     />
                                                 </div>
-                                            </div>
+                                            </div>}
 
-                                            <div className="px_social_accordian_box">
+                                           
+                                           {check("linkedin")&& <div className="px_social_accordian_box">
                                                 <div className="px_social_accordian_icon_boxabso"><div className='rz_acc_card_pro_box ppy' style={{ "background": "#0A66C2" }}> {svg.app.linkedin}</div></div>
                                                 <div className="ps_accordion">
 
@@ -1332,9 +1406,59 @@ export default function SelectSocailAccount() {
                                                         onChange={(e) => handleCheckbox(selectedLinkedInAcc, e.target.checked)}
                                                     />
                                                 </div>
-                                            </div>
+                                            </div>}
 
-                                            <div className=" d-none px_social_accordian_box ">
+                                            {check("youtube")&& <div className="px_social_accordian_box">
+                                                <div className="px_social_accordian_icon_boxabso"><div className='rz_acc_card_pro_box ppy' style={{ "background": "#ff0000" }}> {svg.app.youtube}</div></div>
+                                                <div className="ps_accordion">
+
+                                                    <div className="ps_accordian_div" onClick={() => handleToggle("youtube")} >
+                                                        {selectedGoogleAcc ? <div className="px_social_accordian_acconts_active">
+                                                            <div className="px_social_accordian_acconts_active_inner">
+                                                                <div className='ps_acc_card_pro_box' style={{ "background": "#1877F2" }}> {getNameInitials(selectedGoogleAcc?.obj?.data?.name)}</div>
+                                                                <h6 className="">{selectedGoogleAcc?.obj?.data?.name}</h6>
+                                                            </div>
+                                                            <div className="px_social_accordian_accont_del" onClick={() => removeSelectedAcc(selectedGoogleAcc)} >{svg.app.closeIcon}</div>
+                                                        </div> : <span>Youtube Accounts</span>}
+                                                        <div className="ps_accordian_aarrow"  >{accordianToggle.isGoogle ? svg.app.downArrow : svg.app.rightArrow}</div>
+                                                    </div>
+                                                    {accordianToggle.isGoogle &&
+                                                        <>
+                                                            {googleDetails && googleDetails.map((val, i) => {
+                                                                return <div key={i} className="" onClick={() => handleSocialAccSelection(val, i, "Youtube")}>
+                                                                    <div className="px_social_accordian_acconts">
+                                                                        <div className="rz_acc_card_div">
+                                                                            <div className='ps_acc_card_pro_box' style={{ "background": "" }}> {getNameInitials(val.data?.name)}</div>
+                                                                            <h6 className="">{val.data?.name}</h6>
+                                                                        </div>
+
+                                                                    </div>
+                                                                </div>
+                                                            })}
+
+                                                            {!selectedGoogleAcc && googleDetails.length == 0 ? <div className="ps_selected_social_acc_add_account">
+                                                                <h6> {svg.app.empty_box} Please Add Account</h6>
+                                                                <button onClick={() => {
+                                                                    const newPageUrl = '/Integrations';
+                                                                    window.open(newPageUrl, '_blank');
+                                                                }}>{svg.app.plusIcon} <span className="rz_tooltipEle">Add Social Account</span></button>
+                                                            </div> : ""}
+                                                        </>
+                                                    }
+                                                </div>
+                                                <div className="px_social_accordian_icon_boxabso ppy" style={{ marginLeft: "10px" }}>
+                                                    <input
+                                                        className="form-check-input ps_create_post_checkbox"
+                                                        style={{ cursor: "pointer" }}
+                                                        type="checkbox"
+                                                        disabled={!selectedGoogleAcc}
+                                                        checked={selectedSocialAcc && selectedSocialAcc['youtube']?.checked || false}
+                                                        onChange={(e) => handleCheckbox(selectedGoogleAcc, e.target.checked)}
+                                                    />
+                                                </div>
+                                            </div>}
+
+                                           {check("twitter")&&  <div className=" d-none px_social_accordian_box ">
                                                 <div className="px_social_accordian_icon_boxabso"><div className='rz_acc_card_pro_box ppy' style={{ "background": "#1DA1F2" }}> {svg.app.twitter}</div></div>
                                                 <div className="ps_accordion">
 
@@ -1382,10 +1506,9 @@ export default function SelectSocailAccount() {
                                                         onChange={(e) => handleCheckbox(selectedTwitterAcc, e.target.checked)}
                                                     />
                                                 </div>
-                                            </div>
+                                            </div>}
 
-
-                                            <div>
+                                            {check("pinterest") &&  <div>
                                                 <div className="px_social_accordian_box">
                                                     <div className="px_social_accordian_icon_boxabso"><div className='rz_acc_card_pro_box ppy' style={{ "background": "#BD081C" }}> {svg.app.pinterst}</div></div>
                                                     <div className="ps_accordion">
@@ -1459,7 +1582,8 @@ export default function SelectSocailAccount() {
                                                         />
                                                     </div>
                                                 </div> : ""}
-                                            </div>
+                                            </div>}
+                                           
 
                                         </div>
                                     </div>
@@ -1500,6 +1624,7 @@ export default function SelectSocailAccount() {
                                                     {imagePostDataStep2.platefrom && <>
                                                         {imagePostDataStep2.platefrom.map((d1,i) => {
                                                             let sv = d1.toLowerCase()
+                                                            console.log("sv",sv)
                                                             let color = checklogo(sv)
                                                             return (
                                                                 <div key={i} className="ps_create_available_icon">
@@ -1593,7 +1718,7 @@ export default function SelectSocailAccount() {
             >
 
                 <div className="modal-body_prev">
-                    <h3 className="text-center">Preview</h3>
+                    <h3 className="text-center">Preview </h3>
                     <div className="ps_preview_profile_box">
                         <div className="ps_Preview_profile_img">
                             {userData?.profile ? <img src={userData?.profile} /> :

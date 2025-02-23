@@ -1,5 +1,7 @@
 // pages/billing.js
-import { useState } from "react";
+import { useState,
+  useEffect
+ } from "react";
 import Head from "next/dist/shared/lib/head";
 import Link from "next/link";
 import { common } from "@/components/Common";
@@ -9,11 +11,17 @@ import Select from 'react-select';
 import Router, { useRouter } from 'next/router';
 import { toast } from 'react-toastify';
 const BillingPage = () => {
-  const [planId, setPlanId] = useState(null);
+  const [feature,setFeature]=useState([
+    { id: "facebook", label: "Facebook" },
+    { id: "instagram", label: "Instagram" },
+    { id: "youtube", label: "YouTube" },
+    { id: "pinterest", label: "Pinterest" },
+    { id: "linkedin", label: "LinkedIn" },
+  ]) 
   const [state, setstate] = useState({
     name: "",
     time_period: "MONTH",
-    price: "1",
+    price: "",
     description: "",
     trial_period: "1",
     ai_text_generate: false,
@@ -21,47 +29,62 @@ const BillingPage = () => {
     post_per_month: "1",
     editor_access: false,
     post_type: "single",
+    interval:"1",
+    interval_unit:"monthly",
+    type:''
+    
   });
+  
+  const [ socialIntregation, setSocialIntregation] = useState([]);
 
+  const toggleFeature = (feature) => {
+    setSocialIntregation((prevState) => {
+      return prevState.includes(feature)
+        ? prevState.filter((f) => f !== feature)
+        : [...prevState, feature];
+    });
+  };
   const options = [
     { value: 'MONTH', label: 'Monthly' },
     { value: 'YEAR', label: 'Yearly' },
   ];
   const router = useRouter();
 
-
-
   const createPlan = (plandata) => {
+    console.log("plandata",plandata)
     let data = Object.keys(state);
     for (let i = 0; i < data.length; i++) {
-      if (typeof state[data[i]] !="boolean"  && state[data[i]].trim() == "" && data[i]!="trial_period") {
+      if (typeof state[data[i]] !="boolean"  && state[data[i]].trim() == "" && data[i]!="trial_period" && data[i]!='type') {
         let sr= data[i].split("_").join(" ")
         let s3=sr.charAt(0).toUpperCase() + sr.slice(1);
         toast.error( s3 + " is Required")
         return;
       }
     }
-
     if(state.post_type=="multiple" && parseInt(state.post_per_month)<2)
     {
       toast.error("Post count should greater then 1")
       return;
     }
-    let data1={...state}
+    if(socialIntregation.length==0){
+        toast.error("Aleast on social account select ");
+        return;
+    }
+    let data1={...state,socialIntregation}
     if(state.trial_period=="")
     {
       data1.trial_period="0"
     }
 
   if(plandata=="stripe")
-  {
+     {
     common.getAPI(
       {
         method: "POST",
         url: "stripe",
         data: {
         ...data1,
-        action : "createPlan"
+        action : "createPlan",
       },
         isLoader: true,
       },
@@ -69,12 +92,42 @@ const BillingPage = () => {
         router.push("/admin/setting")
       }
     );
-  }else{
+  }else if(plandata=="paypal"){
     common.getAPI(
       {
         method: "POST",
         url: "paypal",
         data: data1,
+        isLoader: true,
+      },
+      (resp) => { 
+        router.push("/admin/setting")
+      }
+    );
+  }else if(plandata == "razorpay"){
+    common.getAPI(
+      {
+        method:"POST",
+        url:"subscription-plan",
+        data: {
+          ...data1,
+          action : "createrazorpay"
+        },
+        isLoader :true,
+      },
+      (resp)=>{
+        router.push("/admin/setting")
+      }
+    )
+  }else{
+    common.getAPI(
+      {
+        method: "POST",
+        url: "subscription-plan",
+        data: {...data1,
+          type : "free",
+          action : "freeplan"
+        },
         isLoader: true,
       },
       (resp) => { 
@@ -87,6 +140,11 @@ const BillingPage = () => {
 
   const handleBillingFlow = async () => {
     try {
+      if(state.price==0)
+        {
+          createPlan("free");
+          return
+        }
       common.getAPI(
         {
           method: "GET",
@@ -97,11 +155,9 @@ const BillingPage = () => {
           isLoader: true,
         },
         (resp) => { 
-          if(resp.data)
-          {
-              createPlan(resp.data.type);
+          if(resp.data) {
+               createPlan(resp?.data?.type); 
           }
-       
         }
       );
      
@@ -109,6 +165,36 @@ const BillingPage = () => {
       console.error("Billing flow error:", error);
     }
   };
+
+  
+  const UpdateBillingFlow = async () => {
+    try {
+      if(socialIntregation.length==0){
+        toast.error("Aleast on social account select ");
+        return;
+    }
+      let d1={ ...state,socialIntregation}
+      let c_url
+        c_url = `subscription-plan/?id=${params_name}`;
+        d1["action"]="updateFree";
+    
+      common.getAPI(
+        {
+          method: "PUT",
+          url: c_url,
+          data: d1,
+          isLoader: true,
+        },
+        (resp) => { 
+            router.push("/admin/setting")
+        }
+      );
+     
+    } catch (error) {
+      console.error("Billing flow error:", error);
+    }
+  };
+
 
   const changevalue = async (e) => {
     setstate({
@@ -118,12 +204,55 @@ const BillingPage = () => {
   };
 
 
+
   const changetimevalue = async (e) => {
     setstate({
       ...state,
       time_period: e.value,
     });
   };
+  const params = new URLSearchParams(window.location.search);
+  const params_name = params.get("id");
+
+  console.log(params_name,"socialIntregation");
+
+  useEffect(()=>{
+    if(params_name!=null)
+    getPlanById();
+  },[params_name])
+
+
+  const getPlanById = async (e) => {
+    console.log("params_name",params_name)
+    await common.getAPI({
+        method: 'GET',
+        url: `getPlan/?id=${params_name}`,
+        // data: data,
+        isFormData: true,
+    }, (resp) => {
+        console.log("resp",resp.data.time_period) 
+        setstate({
+          name: resp?.data?.name,
+          time_period:resp?.data?.time_period.toUpperCase(),
+          price: resp?.data?.price,
+          description: resp?.data?.description,
+          trial_period: resp?.data?.trial_period,
+          ai_text_generate:resp?.data?.ai_text_generate,
+          ai_image_generate:resp?.data?.ai_image_generate,
+          post_per_month:resp?.data?.post_per_month,
+          editor_access:resp?.data?.editor_access ,
+          post_type: resp?.data?.post_type,
+          interval:resp?.data?.interval,
+          type:resp?.data?.type,
+          interval_unit:resp?.data?.interval_unit
+                })
+                const socialData = resp.data.socialIntregation || [];
+                setSocialIntregation(socialData);
+                console.log(socialData,"data")
+
+    });
+
+}
   return (
     <div>
       <Head>
@@ -136,7 +265,7 @@ const BillingPage = () => {
 
               <div className='d-flex align-items-center mb-2'>
                 <div className='ps_header_back position-absolute'><Link href='/admin/setting'>{svg.app.backIcon} <span>Back</span> <p>Back</p></Link> </div>
-                <div className="dash_header m-auto"><h2>Create Plan</h2></div>
+                <div className="dash_header m-auto"><h2>{(!params_name)?`Create Plan`:`Update plan`}</h2></div>
               </div>
               <div className='rz_socail_platform_bg '>
                 <div className='ps_schedule_box '>
@@ -168,6 +297,7 @@ const BillingPage = () => {
                                   <div className="rz_custom_form ap_require">
                                     <label className="form-label" htmlFor="">Plan Name</label>
                                     <input
+                                    readOnly={params_name}
                                       value={state.name}
                                       onChange={(e) => {
                                         changevalue(e);
@@ -175,7 +305,7 @@ const BillingPage = () => {
                                       type="text"
                                       name="title"
                                       id="name"
-                                      className="rz_customInput ap_input require"
+                                      className={"rz_customInput ap_input require".concat(params_name ? " ps_input_disabled" :"")}
                                       placeholder="Enter plan name"
                                     />
                                   </div>
@@ -186,10 +316,10 @@ const BillingPage = () => {
                                 <div className="col-lg-6 paymentPeriod ">
                                   <div className="rz_custom_form">
                                     <label className="form-label" htmlFor="">Plan Period</label>
-
                                     <div className='rz_creatReels mb-0'>
                                       <div className='rz_custom_form rz_customSelect'>
                                         <Select
+                                        isDisabled={params_name}
                                         id="time_period"
                                           placeholder={'Set 0 if no trial period'}
                                           value={options.filter((d1)=>d1.value==state.time_period)}
@@ -213,7 +343,9 @@ const BillingPage = () => {
                                 <div className="col-lg-6 amount">
                                   <div className="rz_custom_form ap_require">
                                     <label className="form-label" for="">Plan Pricing (According to Plan Period)</label>
-                                    <input
+                                    <input 
+                                      readOnly={params_name}
+                                      disable={(state?.type=='free')} 
                                       value={state.price}
                                       type="text"
                                       id="price"
@@ -221,11 +353,11 @@ const BillingPage = () => {
                                         e.target.value = e.target.value.replace(/\D/g, '')
                                         changevalue(e)
                                       }}
-                                      className="rz_customInput ap_input require"
+                                      className={(state?.type=='free')?"rz_customInput ap_input require ps_input_disabled":"rz_customInput ap_input require"}  
                                       placeholder="Enter plan pricing"
                                     />
                                   </div>
-                                </div>
+                                </div>      
                                 <div className="col-lg-6 freeDays">
                                   <div className="rz_custom_form ap_require">
                                     <label className="form-label" htmlFor="editor_access">
@@ -256,6 +388,7 @@ const BillingPage = () => {
                                   <div className="rz_custom_form ap_require">
                                     <label className="form-label" htmlFor="">Free Trial Period (In days)</label>
                                     <input
+                                     readOnly={params_name}
                                       value={state.trial_period}
                                       onChange={(e) => {
                                         e.target.value = e.target.value.replace(/\D/g, '')
@@ -264,11 +397,13 @@ const BillingPage = () => {
                                       type="number"
                                       min="1"
                                       id="trial_period"
-                                      className="rz_customInput ap_input ap_numberInput"
+                                      className={"rz_customInput  ap_numberInput".concat(params_name ? " ps_input_disabled" :" ap_input")}
                                       placeholder="Enter trial period duration in digits eg. 7"
                                     />
                                   </div>
                                 </div>
+
+
                                 <div className="col-lg-6 freeDays">
                                   <div className="rz_custom_form ap_require ps_create_plan_check">
                                     <label className="form-label" htmlFor="editor_access">
@@ -336,7 +471,8 @@ const BillingPage = () => {
 
                                 <div className="col-lg-6 freeDays">
                                   <div className="rz_custom_form ap_require ">
-                                  <label className="form-label ps_lab_none" htmlFor=""></label>
+                                  <label className="form-label ps_lab_none" htmlFor="">Features Integretion</label>
+                                  <div className="d-flex align-items-center gap-3 ">
                                     <div className="ps_create_plan_check">
                                       <label className="form-label d-flex gap-2 ps_cursor" htmlFor="ai_text_generate">
                                         <input
@@ -350,16 +486,12 @@ const BillingPage = () => {
                                           }}
                                           type="checkbox"
                                           id="ai_text_generate"
-                                        
                                         />
                                         AI text Generation 
                                       </label>
-                                     
                                     </div>
-
                                     <div className="ps_create_plan_check">
                                       <label className="form-label d-flex gap-2 ps_cursor" htmlFor="ai_image_generate">
-
                                         <input
                                           checked={state.ai_image_generate}
                                           onChange={(e) => {
@@ -377,11 +509,8 @@ const BillingPage = () => {
                                       </label>
                                      
                                     </div>
-
-                                    
                                     <div className="ps_create_plan_check">
                                       <label className="form-label d-flex gap-2 ps_cursor" htmlFor="editor_access">
-
                                         <input
                                           checked={state.editor_access}
                                           onChange={(e) => {
@@ -392,18 +521,43 @@ const BillingPage = () => {
                                           }}
                                           type="checkbox"
                                           id="editor_access"
-                                       
                                         />
                                         Editor Acesss
                                       </label>
                                     </div>
+                                    </div>
+                                    <div className="col-lg-12 freeDays">
+                                  <div className="rz_custom_form ap_require ps_create_plan_check">
+                                    <label className="form-label" >
+                                    Social Intregation
+                                    </label>
+                                    <div className="ps_checkbox_align">
+                                {
+                                  feature.map(({id,label},i)=>(
+
+                                    <div key={i+1} className="">
+                                      <label key={id}  className="d-flex gap-2" htmlFor={label}>
+                                        <input
+                                          checked={socialIntregation?.includes(id)}
+                                          onChange={() => toggleFeature(id)}
+                                          type="checkbox"
+                                          id={label}
+                                        />
+                                        {label} 
+                                      </label>
+                                    </div>
+                                          ))
+                                        }
+                                        </div>
+                                        </div>
+                                        </div>
                                   </div>
                                 </div>
 
                                 <div className="col-lg-12">
                                   <div className="justify-content-start mt-md-1 mt-3">
                                     <input type="hidden" id="subsPayAcc" value="<?= (isset($pay_account) ? $pay_account : ''); ?>" />
-                                    <button onClick={handleBillingFlow} type="button" className="rz_addAccBtn addServiceData" > Create Plan</button>
+                                    <button onClick={()=> {(!params_name)?handleBillingFlow():UpdateBillingFlow()}} type="button" className="rz_addAccBtn addServiceData" >{(!params_name)?`Create Plan`:`Update plan`}</button>
                                   </div>
                                 </div>
                               </div>

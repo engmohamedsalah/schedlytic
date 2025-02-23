@@ -38,7 +38,7 @@ let FramesBG = () => {
         setAge(event.target.value);
     };
 
-    // range
+
 
     const [value, setValue] = React.useState(30);
 

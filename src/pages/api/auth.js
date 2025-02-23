@@ -68,13 +68,13 @@ let loginApp = (req, res) => {
 				password: {
 					require: true,
 				},
-			},
+			}, 
 		},
 		req,
 		res,
 		async ({authData} = validateResp) => {
             let {email , password} = req.query; 
-            dbQuery.select({
+          await  dbQuery.select({
                 collection : userModel,
                 where : {
                     email : email.toLowerCase()
@@ -138,6 +138,7 @@ let loginApp = (req, res) => {
                                     },
                                     limit : 1,
                                 })
+                               
                                 let myResp = {
                                     loggedIn: true,
                                     status: true,
@@ -149,7 +150,7 @@ let loginApp = (req, res) => {
                                     profilePic: checkUser.profile,
                                     subscription: checkUser.subscription,
                                     parentId: checkUser.parentId,
-                                    plan : plan
+                                    plan,
                                 };
                            
                                 res.status(200).json({
@@ -157,6 +158,7 @@ let loginApp = (req, res) => {
                                     status: true,
                                     message: "You are successfully logged in.",
                                 });
+                                console.log("checkUser.planId",checkUser.planId)
                             }) 
                         }else{
                             throw new Error("Your account is in-active, please contact to admin.");
@@ -168,6 +170,7 @@ let loginApp = (req, res) => {
                     throw new Error("Invalid credentials!");
                 }        
             }).catch (error => { 
+                console.log(error.message)
                 handleError(error.message);
             });
         }

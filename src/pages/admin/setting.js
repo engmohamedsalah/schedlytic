@@ -75,7 +75,7 @@ export default function User() {
                 keyword: state.keyword,
                 keys: '_id,name,email,status,isCreated,role,lastname',
                 subscriptions: state.selectedCategory,
-                action: "getall"
+                // action: "getall"
             },
         }, (resp) => {
             setMyState(setQuery, {
@@ -244,12 +244,14 @@ export default function User() {
                                             <th>Free Trail Period</th>
                                             <th>Plan Status</th>
                                             <th>Plan Period </th>
+                                            <th>Action </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {
                                             !state.subscriptionLoading && state.subscriptionData.length ?
                                                 state.subscriptionData.map((user, index) => {
+                                                    { console.log("user", user._id) }
                                                     let sbs = state.subscriptonList.filter(d => user.subscriptions.includes(d.value))
                                                     return <tr key={index}>
                                                         <td>{cnt++}</td>
@@ -275,7 +277,11 @@ export default function User() {
                                                         <td>
                                                             <div className='ps_plan_period'>{user.time_period}</div>
                                                         </td>
-                                                        
+                                                        <td>
+                                                            {/* `/pixa-support/projects/${project._id}?status=${'open'} */}
+                                                            <Link href={`/admin/paypal/createPlan/?id=${user.id}`} className='ps_plan_period'>Edit</Link>
+                                                            {/* <div className='ps_plan_period'>Edit</div> */}
+                                                        </td>
                                                     </tr>
                                                 })
                                                 : <NoDataWrapper

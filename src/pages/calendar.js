@@ -19,6 +19,7 @@ import Flatpickr from "react-flatpickr";
 import "flatpickr/dist/themes/material_green.css";
 import { toast } from "react-toastify";
 import { getNameInitials } from "@/components/utils/utility";
+import { youtube } from "googleapis/build/src/apis/youtube";
 
 export default function Calender() {
     const [events, setEvents] = useState([]);
@@ -335,7 +336,8 @@ export default function Calender() {
             pinterest: { svg: svg.app.pinterst, color: "#bd081c" },
             instagram: { svg: svg.app.instagram, color: "#e4405f" },
             linkedin: { svg: svg.app.linkedin, color: "#0a66c2" },
-            facebook: { svg: svg.app.facebook, color: "#1877f2" }
+            facebook: { svg: svg.app.facebook, color: "#1877f2" },
+            youtube: { svg: svg.app.youtube, color: "red" }
         }
         return d1[value]
     }
@@ -469,8 +471,8 @@ export default function Calender() {
                             status =obj.includes(d1.type) ? false : true;
                         }
                         return(<>
-                        <div className={`ps_preview_socail_icon_div`.concat(status  ? "" :" ps_preview_socail_icon_disable")} style={{background:l1.color}}>
-                            {l1.svg}
+                        <div className={`ps_preview_socail_icon_div`.concat(status  ? "" :" ps_preview_socail_icon_disable")} style={{background:l1?.color}}>
+                            {l1?.svg}
                             <span className="rz_tooltipSpan">Internal server error from {d1.type}</span>
                         </div>
                         </>)

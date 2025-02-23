@@ -51,6 +51,7 @@ export default function CreatePost(props) {
         thumb :"",
         meta : ""
     });
+    
 
     let [state, setQuery] = useState({
         postLoading: false,
@@ -63,8 +64,8 @@ export default function CreatePost(props) {
     });
 
     const router = useRouter();
-    
-    
+
+
 
 
     let myStore = appStore(state => state);
@@ -345,8 +346,8 @@ export default function CreatePost(props) {
             <div className="ps_tabs_padd">
                 {!postDataObj?.aiImage ? <div className="" style={{ marginTop: "80px" }}>
                     <label className="form-label pt-2"> Prompt For AI Image<span className="text-danger">*</span></label>
-                    <div className="d-flex justify-content-between align-items-center gap-1">
-                        <div className="col-md-10 col-9">
+                    <div className="d-flex justify-content-between">
+                        <div className="col-10 me-2">
                             <input type="text" id="searchImageText" placeholder="Enter prompt for AI image" className="form-control form-control-md" value={postDataObj?.searchImageText || ""} onChange={(e) => inputHandler(e)} />
                         </div>
                         <button className='rz_addAccBtn' disabled={isDisabled} onClick={() => generateAiImage()}>Generate</button>
@@ -355,8 +356,8 @@ export default function CreatePost(props) {
                 {postDataObj?.aiImage ? <>
                     <div className=" ">
                         <label className="form-label pt-2"> Prompt for AI image<span className="text-danger">*</span></label>
-                        <div className="d-flex justify-content-between align-items-center gap-1">
-                            <div className="col-md-10 col-9 ">
+                        <div className="d-flex justify-content-between">
+                            <div className="col-10 ">
                                 <input type="text" id="searchImageText" placeholder="Enter prompt for AI image" className="form-control form-control-md" value={postDataObj?.searchImageText || ""} onChange={(e) => inputHandler(e)} />
                             </div>
                             <button className='rz_addAccBtn' disabled={isDisabled} onClick={() => generateAiImage()}>Generate</button>
@@ -634,10 +635,10 @@ export default function CreatePost(props) {
             );
             let ratio=aspect_ratio(da.height/da.width)
            meta ={
-            da,
             size:selectedFile.size,
             type : selectedFile.type,
             ratio: ratio.join(":"),
+            ...da,
            }
             data.append("meta", JSON.stringify(meta));
         }
@@ -741,7 +742,14 @@ export default function CreatePost(props) {
 
     const removeSelectedImage = () => {
         postDataObj.url = ""
+        postDataObj.type = ""
+        postDataObj.thumb = ""
         setPostDataObj({ ...postDataObj })
+    }
+
+
+    const check=(social)=>{
+        return userData?.plan?.socialIntregation?.includes(social)
     }
 
     const checkSocialValidation =(obj)=>{
@@ -773,6 +781,15 @@ export default function CreatePost(props) {
               duration : 600
             },
           },
+
+          "YOUTUBE" : {
+            "caption" : 3000,
+            "VIDEO" : {
+              FILE_TYPE : ["flv","mp4","mkv","webm","avc"],
+              duration : 900
+            },
+          },
+
           'PINTEREST':{
             "caption" :  500 ,
             "VIDEO" : {
@@ -781,15 +798,44 @@ export default function CreatePost(props) {
             },
           }
         }
+console.log('userData',userData)
+        if(!check('facebook'))
+        {
+            delete valid["FACEBOOK"]
+        }
+        if(!check('instagram'))
+        {
+            delete valid["INSTAGRAM"]
+        }
+        if(!check('pinterest'))
+        {
+            delete valid["PINTEREST"]
+        }
+        if(!check('youtube'))
+        {
+            delete valid["YOUTUBE"]
+        }
+        if(!check('linkedin'))
+        {
+      
+            delete valid["LINKEDIN"]
+        }
         let social=[]
         let url=false
         if(!obj.url)
         {
              delete valid["INSTAGRAM"]
              delete valid["PINTEREST"]
+             
         }else{
             url=true
         }
+        if(obj.type!="video" || !obj.url)
+            {
+                delete valid["YOUTUBE"]
+            }
+        console.log({obj})
+        console.log({valid})
        Object.keys(valid).map((data)=>{
         let d1=valid[data]
         let f1=false
@@ -814,20 +860,24 @@ export default function CreatePost(props) {
             }
              
         }
-        
+
         if(url && obj.type=="image"){
             if(data=="INSTAGRAM")
             {
-                let meta=JSON.parse(obj.meta)
-                 let radio=meta.da.width/meta.da.height
-                 console.log({radio},meta)
-                 let arr=d1["IMAGE"]["ratio"]
-                 console.log(arr,radio,radio>=arr[0],radio<=arr[1])
-                 if(radio>=arr[0] && radio<=arr[1])
-                 {
+                if(obj.meta)
+                {
+                    let meta= typeof obj.meta =="object" ? obj.meta : JSON.parse(obj.meta)
+                    meta=meta?.da ? meta.da : meta
+                    let radio=meta.width/meta.height
+                    let arr=d1["IMAGE"]["ratio"]
+                    console.log(arr,radio,radio>=arr[0],radio<=arr[1])
+                    if(radio>=arr[0] && radio<=arr[1])
+                    {
+                       social.push(data)
+                    }
+                }else{
                     social.push(data)
-                 }
-
+                }
             }else{
                 social.push(data)
             }
@@ -954,7 +1004,7 @@ export default function CreatePost(props) {
                                     </div>
                                 )
                                })}
-                            
+
                             </>
                              }
                         </div>
@@ -1084,6 +1134,7 @@ export default function CreatePost(props) {
 
         if (mul[update]) {
             mul[update].title = postDataObj?.title
+            mul[update].caption = postDataObj?.caption
             mul[update].url = postDataObj?.url
             mul[update].text = postDataObj?.text
             mul[update].type = postDataObj?.type
@@ -1111,9 +1162,38 @@ export default function CreatePost(props) {
         }
     }
 
+
+    const saveasdraft= () => {
+         if (postDataObj?.title.trim() == "") {
+            toast.error("Please add post title")
+            return
+        }
+        let d2={
+            ...postDataObj,
+       
+        }
+        if(router?.query?.id)
+        {
+            d2.cid= base64_decode(router?.query?.id) 
+        }
+        common.getAPI({
+            method:'POST',
+            url:'saveasdraft',
+            data: d2
+        }, (resp) => {
+            if (resp.status) {
+                Router.push("/getdraft")
+            } else {
+                toast.error("Failed to saved drafts");
+            }
+        }, (error) => {
+            toast.error("An error occurred while fetching drafts", error);
+        });
+    };
+
+    
     return (
         <>
-
             <div className='rz_dashboardWrapper' >
                 <div className="ps_integ_conatiner">
                     <div className="welcomeWrapper">
@@ -1152,7 +1232,7 @@ export default function CreatePost(props) {
                                                     id="text"
                                                     className='rz_customInput rz_customTextArea'
                                                     placeholder='Enter caption'
-                                                    value={postDataObj?.text || ""}
+                                                    value={postDataObj?.text|| ""}
                                                     onChange={(e) => inputHandler(e)}
                                                 ></textarea>
                                             </div>
@@ -1207,6 +1287,12 @@ export default function CreatePost(props) {
                                 </>
                             }
                             <button className='rz_addAccBtn' onClick={submitData}> Next {svg.app.nextIcon}</button>
+                            { multiPost.length ==0 &&     
+                            <button className='rz_addAccBtn' onClick={saveasdraft}>
+                                 Save as Draft {svg.app.nextIcon}
+                              </button>
+                            }
+
                         </div>
                     </div>
                 </div>

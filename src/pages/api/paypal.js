@@ -1,11 +1,12 @@
 import { Account } from "aws-sdk";
 import bcrypt from "bcryptjs";
+import { collect, keys } from "underscore";
 const planModel = require("./models/planModel");
 const userModel = require("./models/userModel");
 const invoiceModel = require("./models/invoiceModel");
 const productModel = require("./models/productModel");
 const paymentCredentialModel = require("./models/paymentCredentialModel");
-const { sendMail} = require("./lib/commonLib");
+const { sendMail } = require("./lib/commonLib");
 const {
   handleError,
   dbQuery,
@@ -13,120 +14,123 @@ const {
 } = require("./lib/commonLib");
 const axios = require('axios');
 const serviceModel = require("./models/serviceModel");
+const jwt = require("jsonwebtoken");
 
 export default async function handler(req, res) {
   try {
     if (req.method == "POST") {
-         if(req.body.action=="createOrder"){
-          createOrder(req,res)
-         }else if(req.body.action=="Subscribe"){
-          createBillingSubscription(req,res)
-         }else {
-          createPlan(req,res)
-         }
-    } else if (req.method == "PUT") {
-    } else if (req.method == "GET") {
-     
+      if (req.body.action == "createOrder") {
+        createOrder(req, res)
+      } else if (req.body.action == "Subscribe") {
+        createBillingSubscription(req, res)
+      } else {
+        createPlan(req, res)
+      }
+    } if (req.method == "PUT") {
+      updateUser(req, res)
+
+    }
+    else if (req.method == "GET") {
+
     } else if (req.method == "DELETE") {
-          deletePlan(req,res)
+      deletePlan(req, res)
     }
   } catch (error) {
     handleError(error, "AuthAPI");
   }
 }
 
+
+
 let createPlan = (req, res) => {
   customValidator(
     {
       data: req.body,
       keys: {
-        
+
       },
     },
     req,
     res,
     async ({ authData } = validateResp) => {
-      try{
-      let data =req.body
-      data.userId=authData.id
-      let d1=await dbQuery.select({
-        collection: planModel,
-        where: {
-          name : data.name
-        },
-      });
-      
-      if(d1.length>0)
-      {
-        res.status(401).json({
-          status: false,
-          message: "Plan already exists",
-        });
-        return 
-      }
-      
-      let acccount=await dbQuery.select({
-        collection: paymentCredentialModel,
-        where: {
-          status : "active",
-          type : 'paypal'
-        },
-        limit : 1
-      });
-      if(acccount)
-      {
-        const token = await createToken(acccount.client_id,acccount.secret_key);
-        let product=await dbQuery.select({
-          collection: productModel,
-          where: {type : "paypal"},
-          limit : 1
-        });
-        let productId
-        if(product &&  Object.keys(product).length>0){
-          productId=product.id
-        }else{
-          productId = await createProduct(token,data);
-        }
-        let plandata = await createBillingPlan(productId,token,data);
-        let hook= await createWebhook(token)
-         plandata ={
-          ...plandata,
-          ...data,
-          type : "paypal"
-        }
-        let d2=await dbQuery.insert({
+      try {
+        let data = req.body
+        data.userId = authData.id
+        let d1 = await dbQuery.select({
           collection: planModel,
-          data: plandata,
+          where: {
+            name: data.name
+          },
         });
-        if(d2){
-          res.status(200).json({
+
+        if (d1.length > 0) {
+          res.status(401).json({
+            status: false,
+            message: "Plan already exists",
+          });
+          return
+        }
+
+        let acccount = await dbQuery.select({
+          collection: paymentCredentialModel,
+          where: {
+            status: "active",
+            type: 'paypal'
+          },
+          limit: 1
+        });
+        if (acccount) {
+          const token = await createToken(acccount.client_id, acccount.secret_key);
+          let product = await dbQuery.select({
+            collection: productModel,
+            where: { type: "paypal" },
+            limit: 1
+          });
+          let productId
+          if (product && Object.keys(product).length > 0) {
+            productId = product.id
+          } else {
+            productId = await createProduct(token, data);
+          }
+          let plandata = await createBillingPlan(productId, token, data);
+          let hook = await createWebhook(token)
+          plandata = {
+            ...plandata,
+            ...data,
+            type: "paypal"
+          }
+          let d2 = await dbQuery.insert({
+            collection: planModel,
+            data: plandata,
+          });
+          if (d2) {
+            res.status(200).json({
+              status: true,
+              message: "Plan Created Sucessfully. ",
+            });
+          }
+        } else {
+          res.status(401).json({
             status: true,
-            message: "Plan Created Sucessfully. ",
+            message: "Active Payment Account. ",
           });
         }
-      } else {
+
+      } catch (e) {
         res.status(401).json({
-          status: true,
-          message: "Active Payment Account. ",
+          status: false,
+          message: "Something went wrong. ",
         });
       }
-      
-    }catch(e){
-      res.status(401).json({
-        status: false,
-        message: "Something went wrong. ",
-      });
-    }
-});
+    });
 };
 
 
-const createBillingPlan = async (productId, token,data) => {
+const createBillingPlan = async (productId, token, data) => {
   try {
-    let feq=[]
-    if(data.trial_period!=0)
-    {
-      feq.push(  {
+    let feq = []
+    if (data.trial_period != 0) {
+      feq.push({
         frequency: {
           interval_unit: "Day",
           interval_count: data.trial_period,
@@ -134,11 +138,11 @@ const createBillingPlan = async (productId, token,data) => {
         tenure_type: 'TRIAL',
         sequence: 1,
         total_cycles: 1,
-        
+
       })
     }
-    if( data.time_period){
-      feq.push(  {
+    if (data.time_period) {
+      feq.push({
         frequency: {
           interval_unit: data.time_period,
           interval_count: 1,
@@ -161,7 +165,7 @@ const createBillingPlan = async (productId, token,data) => {
         name: data.name,
         description: data.description,
         status: 'ACTIVE',
-        billing_cycles:feq,
+        billing_cycles: feq,
         payment_preferences: {
           auto_bill_outstanding: true,
           setup_fee: {
@@ -179,7 +183,7 @@ const createBillingPlan = async (productId, token,data) => {
         },
       }
     );
-  
+
     const planData = response.data;
     return planData;
   } catch (error) {
@@ -188,7 +192,7 @@ const createBillingPlan = async (productId, token,data) => {
 };
 
 
-const createProduct = async (token,data) => {
+const createProduct = async (token, data) => {
   try {
     const response = await axios.post(
       `${process.env.PAYPAL_URL}/v1/catalogs/products`,
@@ -204,19 +208,19 @@ const createProduct = async (token,data) => {
       }
     );
 
-    let d2=await dbQuery.insert({
+    let d2 = await dbQuery.insert({
       collection: productModel,
-      data:{
-        id : response.data.id,
-        name :  data.name,
-        description :data.description,
-        type : "paypal"
-    }
+      data: {
+        id: response.data.id,
+        name: data.name,
+        description: data.description,
+        type: "paypal"
+      }
     });
 
-  return response.data.id;
+    return response.data.id;
 
-    
+
   } catch (error) {
     throw error;
   }
@@ -224,8 +228,8 @@ const createProduct = async (token,data) => {
 
 
 
-const createToken = async (PAYPAL_CLIENT_ID,PAYPAL_SECRET_KEY) => {
-  
+const createToken = async (PAYPAL_CLIENT_ID, PAYPAL_SECRET_KEY) => {
+
   try {
     const response = await axios.post(
       `${process.env.PAYPAL_URL}/v1/oauth2/token`,
@@ -233,7 +237,7 @@ const createToken = async (PAYPAL_CLIENT_ID,PAYPAL_SECRET_KEY) => {
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${Buffer.from(PAYPAL_CLIENT_ID+":"+PAYPAL_SECRET_KEY).toString('base64')}`,
+          Authorization: `Basic ${Buffer.from(PAYPAL_CLIENT_ID + ":" + PAYPAL_SECRET_KEY).toString('base64')}`,
         },
       }
     );
@@ -246,50 +250,50 @@ const createToken = async (PAYPAL_CLIENT_ID,PAYPAL_SECRET_KEY) => {
   }
 };
 
-let createOrder= async (req,res) => {
+let createOrder = async (req, res) => {
   customValidator(
     {
       data: req.body,
       keys: {
-        
+
       },
     },
     req,
     res,
     async ({ authData } = validateResp) => {
-    try{
-    let {amount} =req.body  
-    const response = await axios.post(
-      `${process.env.PAYPAL_URL}/v2/checkout/orders`,
-      {
-        intent: 'CAPTURE',
-        purchase_units: [
+      try {
+        let { amount } = req.body
+        const response = await axios.post(
+          `${process.env.PAYPAL_URL}/v2/checkout/orders`,
           {
-            amount: {
-              currency_code: 'USD',
-              value: amount,
-            },
+            intent: 'CAPTURE',
+            purchase_units: [
+              {
+                amount: {
+                  currency_code: 'USD',
+                  value: amount,
+                },
+              },
+            ],
           },
-        ],
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${Buffer.from(process.env.PAYPAL_CLIENT_ID+":"+process.env.PAYPAL_SECRET_KEY).toString('base64')}`,
-        },
-      }
-    );
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Basic ${Buffer.from(process.env.PAYPAL_CLIENT_ID + ":" + process.env.PAYPAL_SECRET_KEY).toString('base64')}`,
+            },
+          }
+        );
 
-    res.status(200).json({ 
-      orderId: response.data.id ,
-      status: true,
-      message: "",
-    });
-  } catch (error) {
-    // Handle errors here
-    throw error;
-  }
-})
+        res.status(200).json({
+          orderId: response.data.id,
+          status: true,
+          message: "",
+        });
+      } catch (error) {
+        // Handle errors here
+        throw error;
+      }
+    })
 };
 
 
@@ -297,82 +301,132 @@ let createOrder= async (req,res) => {
 
 const createBillingSubscription = async (req, res) => {
   try {
-    let { price, planId, name, email, password, lastname ,id,orderId} = req.body;
-    let invdata = {
-        id : id,
-        orderId:orderId,
-        plan_id: planId,
-    };
-    let data = await dbQuery.select({
-      collection: userModel,
-      where: { email: email },
-    });
+    let { price, planId, name, email, password, lastname, id, orderId } = req.body;
+    let token = req.headers.authorization || "";
+    console.log('token', token);
 
-    if (data.length > 0) {
-      let d1 = await dbQuery.update({
+    if (!token) {
+      res.status(401).send({ message: "Token not provided" });
+      if (!token.startsWith("Bearer")) {
+        return res.status(401).send({ message: "Invalid token format" });
+      } else {
+        const tokenData = token.split(" ");
+        console.log('tokenData', tokenData)
+        const decode = jwt.verify(tokenData, process.env.TOKEN_SECRET)
+        req.user = decode;
+        next();
+      }
+
+      let data = await dbQuery.select({
         collection: userModel,
-        where: { _id: data[0]._id },
-        data: {
-          planId: planId,
-          plan_status: true,
-          subscription : id,
-          paymenttype : "paypal"
-        },
+        where: { _id: decode.id },
         limit: 1,
       });
-      let plandata = await dbQuery.select({
-        collection: planModel,
-        where: { id: planId },
-        limit : 1,
-      });
-      if(plandata.trial_period!=0)
-      {
-        invdata.userId = data[0]._id;
-        invdata.subscription =id;
-        invdata.price=0
-        invdata.type = "paypal"
-        await dbQuery.insert({
-          collection: invoiceModel,
-          data: invdata,
+      console.log('data', data);
+
+      if (data) {
+        let d1 = await dbQuery.update({
+          collection: userModel,
+          where: { _id: jwtData.id },
+          data: {
+            planId: planId,
+            plan_status: true,
+            subscription: id,
+            paymenttype: "paypal"
+          },
+          limit: 1,
         });
+        console.log('d1', d1)
+
+      } else {
+        return res.status(500).json({ status: true, message: "User Not found.", });
       }
     } else {
-      let pas = await bcrypt.hash(password, 5);
-      let insData = {
-        name,
-        email: email.toLowerCase(),
-        password: pas,
-        status: 1,
-        source: "Manually",
-        planId: planId,
-        lastname : lastname,
-        subscription : id,
-        paymenttype : "paypal"
+
+      let invdata = {
+        id: id,
+        orderId: orderId,
+        plan_id: planId,
       };
+      console.log('invdata', invdata)
 
-      let data11 = await dbQuery.insert({
+
+      let data = await dbQuery.select({
         collection: userModel,
-        data: insData,
+        where: { email: email },
       });
-      let plandata = await dbQuery.select({
-        collection: planModel,
-        where: { id: planId },
-        limit : 1,
-      });
+      console.log('data', data)
 
-      if(plandata.trial_period!=0)
-      {
-        invdata.userId = data11._id;
-        invdata.subscription =id;
-        invdata.price=0
-        invdata.type = "paypal"
-        await dbQuery.insert({
-          collection: invoiceModel,
-          data: invdata,
+
+      if (data.length > 0) {
+        let d1 = await dbQuery.update({
+          collection: userModel,
+          where: { _id: data[0]._id },
+          data: {
+            planId: planId,
+            plan_status: true,
+            subscription: id,
+            paymenttype: "paypal"
+          },
+          limit: 1,
         });
-      }
 
-      let html=`<div style="max-width: 600px ;
+        let plandata = await dbQuery.select({
+          collection: planModel,
+          where: { id: planId },
+          limit: 1,
+        });
+        console.log('plandata', plandata);
+
+        if (plandata.trial_period != 0) {
+          invdata.userId = data[0]._id;
+          invdata.subscription = id;
+          invdata.price = 0
+          invdata.type = "paypal"
+          await dbQuery.insert({
+            collection: invoiceModel,
+            data: invdata,
+          });
+        }
+      } else {
+        let pas = await bcrypt.hash(password, 5);
+        let insData = {
+          name,
+          email: email.toLowerCase(),
+          password: pas,
+          status: 1,
+          source: "Manually",
+          planId: planId,
+          lastname: lastname,
+          subscription: id,
+          paymenttype: "paypal"
+        };
+        console.log(insData)
+
+        let data11 = await dbQuery.insert({
+          collection: userModel,
+          data: insData,
+        });
+        console.log('data11', data11)
+
+        let plandata = await dbQuery.select({
+          collection: planModel,
+          where: { id: planId },
+          limit: 1,
+        });
+
+        if (plandata.trial_period != 0) {
+          invdata.userId = data11._id;
+          invdata.subscription = id;
+          invdata.price = 0
+          invdata.type = "paypal"
+          await dbQuery.insert({
+            collection: invoiceModel,
+            data: invdata,
+          });
+        }
+
+        let html = `<div style="max-width: 600px ;
       padding:25px;background-color: #f6f6ff;
       border-radius: 30px; 
       margin: 0 auto;
@@ -402,49 +456,51 @@ const createBillingSubscription = async (req, res) => {
           color: #8386a5;
           font-weight: 400;"><span> Thank you for being a loyal customer : <b>The ${process.env.SITE_TITLE} Team</b></span></div>
       </div>`
-      let mailData={
-        from : process.env.MANDRILL_EMAIL,
-        to :  email.toLowerCase(),
-        subject : "Welcome",
-        htmlbody : html
-     };
+        let mailData = {
+          from: process.env.MANDRILL_EMAIL,
+          to: email.toLowerCase(),
+          subject: "Welcome",
+          htmlbody: html
+        };
 
-     let data1 =await dbQuery.select({
-        collection : serviceModel,
-        where : {type : "smtp"},
-        limit : 1,
-    })
-    if(data1){
-        let d1= {
-            to :  email.toLowerCase(),
-            subject : "Welcome",
-            ...data1.data, 
-            htmlbody : html
+        let data1 = await dbQuery.select({
+          collection: serviceModel,
+          where: { type: "smtp" },
+          limit: 1,
+        })
+        if (data1) {
+          let d1 = {
+            to: email.toLowerCase(),
+            subject: "Welcome",
+            ...data1.data,
+            htmlbody: html
+          }
+          await sendMail(d1)
+        } else {
+          await sendMail(mailData, "service")
         }
-        await sendMail(d1)
-    }else{
-        await sendMail(mailData,"service")
-    }
+      }
+      return res.status(200).json({
+        status: true,
+        message: "", data
+      });
+
     }
 
-    res.status(200).json({
-      status: true,
-      message: "Plan Created Sucessfuly",
-    });
   } catch (error) {
-    res.status(200).json({
+    console.log('error', error)
+    return res.status(500).json({
       status: true,
       message: "",
     });
   }
-};
-
+}
 
 const createWebhook = async (accessToken) => {
 
   try {
 
-    
+
     const response = await axios.post(
       `${process.env.PAYPAL_URL}/v1/notifications/webhooks`,
       {
@@ -475,10 +531,107 @@ const createWebhook = async (accessToken) => {
       }
     );
 
-   
+
   } catch (error) {
 
   }
 };
 
 
+
+
+
+const updateUser = async (req, res) => {
+  try {
+    await customValidator({}, req, res, async (validateResp) => {
+      const { authData } = validateResp;
+      console.log('authData', authData)
+
+      const { planId } = req.body;
+      console.log('planId:', planId);
+
+      const { id } = req.body;
+      console.log('id', id)
+
+      console.log('req.body:', req.body);
+
+
+      let invdata = { plan_id: planId };
+      console.log('invdata', invdata)
+
+
+
+      const account = await dbQuery.select({
+        collection: paymentCredentialModel,
+        where: { type: 'paypal' },
+        limit: 1
+      });
+      console.log(account, "1st call");
+
+
+      const existingIdSubscription = await dbQuery.select({
+        collection: userModel,
+        where: { _id: authData.id },
+        limit: 1
+      });
+      console.log(existingIdSubscription, "2nd call");
+
+      if (existingIdSubscription.subscription && existingIdSubscription.paymenttype === "paypal" && existingIdSubscription.subscription !== id) {
+        if (existingIdSubscription) {
+          if (existingIdSubscription.subscription !== id) {
+            if (existingIdSubscription.subscription && existingIdSubscription.paymenttype == "paypal")
+              try {
+                const accessToken = await createToken(account.client_id, account.secret_key);
+                console.log({ accessToken })
+                const cancelResponse = await fetch(
+                  `${process.env.PAYPAL_URL}/v1/billing/subscriptions/${existingIdSubscription.subscription}/cancel`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${accessToken}`,
+                      'Accept': 'application/json',
+
+                    },
+                    body: JSON.stringify({ reason: "Not satisfied with the service" }),
+                  }
+                );
+                console.log({ cancelResponse }, "ooooopppppppp")
+                if (!cancelResponse.ok && cancelResponse.status !== 204) {
+                  console.log(cancelResponse.ok)
+                  const errorData = await cancelResponse.json();
+                  console.error('Error cancelling subscription:', errorData);
+                } else {
+                  console.log('Subscription cancelled successfully');
+                }
+              } catch (cancelError) {
+                console.error('Cancellation error:', cancelError);
+              }
+          }
+        }
+        const ss = await dbQuery.update({
+          collection: userModel,
+          where: { _id: existingIdSubscription._id },
+          data: {
+            planId: planId,
+            plan_status: true,
+            subscription: id,
+            paymenttype: "paypal"
+          },
+          limit: 1
+        });
+        console.log(ss, "3rd call");
+
+        await dbQuery.insert({
+          collection: invoiceModel,
+          data: ss
+        });
+      }
+      return res.status(200).json({ status: true, message: "" });
+    });
+
+  } catch (err) {
+    console.error('Error in updateUser:', err);
+    return res.status(500).json({ status: false, message: "Something went wrong" });
+  }
+};

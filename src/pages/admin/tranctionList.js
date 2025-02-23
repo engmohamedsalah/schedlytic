@@ -354,47 +354,7 @@ export default function TranctionList() {
                                                         <td> {moment(user.createDate).format("YYYY-MM-DD")}</td>
                                                         <td> ${user?.price ? user.price : user.plan.price}</td>
 
-                                                        {/* <td>
-
-                                                            <div className='d-flex align-items-center'>
-
-                                                                <span className="social_box_edit" onClick={() => {
-                                                                    handlePreviewUser(user._id)
-                                                                }}>
-                                                                    {svg.app.eyeIcon}
-                                                                    <span className='rz_tooltipSpan'>Preview</span>
-                                                                </span>
-                                                                <span className="social_box_edit " onClick={() => {
-
-                                                                    setMyState(setQuery, {
-                                                                        modalShown: true,
-                                                                        isEdit: user._id,
-                                                                        isEditIndex: index,
-                                                                        name: user.name,
-                                                                        email: user.email,
-                                                                        subscriptions: user.subscriptions,
-                                                                        status: +user.status,
-                                                                        role: user.role,
-                                                                        lastname: user.lastname,
-                                                                        plan : user.planId,
-                                                                        paymenttype : user.paymenttype
-                                                                    });
-                                                                }}>
-                                                                    {svg.app.editIcon}
-                                                                    <span className='rz_tooltipSpan'>Edit</span>
-                                                                </span>
-                                                                <span className="social_box_delete" onClick={() => {
-                                                                    setMyState(setQuery, {
-                                                                        isRemoveAction: user._id
-                                                                    })
-                                                                }}>
-                                                                    {svg.app.deleteIcon}
-                                                                    <span className='rz_tooltipSpan'>Delete</span>
-                                                                </span>
-
-                                                            </div>
-
-                                                        </td> */}
+                                                      
 
                                                     </tr>
                                                 })

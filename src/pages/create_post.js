@@ -6,11 +6,8 @@ import Head from "next/head";
 
 
 export default function AddPost() {
-
     let myStore = appStore(state => state);
     let storePostData = myStore.postData;
-
-
     const showPostFormStep = () => {
         if (!storePostData?.step) {
             return <CreatePost />

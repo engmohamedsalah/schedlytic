@@ -79,7 +79,7 @@ let awsFunctionObj = {
                 Bucket: process.env.BUCKET_NAME, 
                 Key: params.Key,
                 Body: typeof params.Body == 'string' ? fs.readFileSync(params.Body) : params.Body,
-                ACL: 'public-read',
+                // ACL: 'public-read',
                 ContentType: params.ContentType
             };
             ASWs3.upload(obj, function(s3Err, data) { 
@@ -225,7 +225,7 @@ let awsFunctionObj = {
                 CopySource: process.env.BUCKET_NAME+ '/'   + copypath,
                 Bucket: process.env.BUCKET_NAME,
                 Key:url,
-                ACL: "public-read"
+                // ACL: "public-read"
                 }, function(copyErr, copyData){
                  if (copyErr) {
                  } else {

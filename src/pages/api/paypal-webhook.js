@@ -1,4 +1,3 @@
-import { Account } from "aws-sdk";
 
 const userModel = require("./models/userModel");
 const userSubscriptionModel = require("./models/invoiceModel");
@@ -13,7 +12,6 @@ const {
 const axios =require("axios")
 export default async function handler(req, res) {
   try {
-    
     if (req.method == "POST") {
         checkhook(req, res);
     } 
@@ -128,7 +126,6 @@ catch(e){
 
 
 const createToken = async (PAYPAL_CLIENT_ID,PAYPAL_SECRET_KEY) => {
-  
   try {
     const response = await axios.post(
       `${process.env.PAYPAL_URL}/v1/oauth2/token`,
@@ -189,3 +186,8 @@ const getPaymentDetails=async(paymentId)=> {
     throw error;
   }
 }
+
+
+
+
+

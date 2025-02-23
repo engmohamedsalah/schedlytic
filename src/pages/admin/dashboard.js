@@ -1,4 +1,4 @@
-"use client"
+    "use client"
 import { LineChart } from "@/components/chart/LineChart";
 import { useEffect, useState } from "react";
 import Head from 'next/head';
@@ -7,9 +7,12 @@ import moment from "moment";
 import { DateRangePicker } from 'rsuite';
 import { common } from "@/components/Common";
 import { useRouter } from 'next/router';
+import { appStore } from '@/zu_store/appStore';
 
 export default function Dashboard() {
     const [graph, setgraph] = useState("publish")
+    const myStore =appStore(i=>i) 
+    let userData = myStore.userData;
     const [isLoading, setIsLoading] = useState(false);
 
     const [dashBoardData, setDashBoardData] = useState();
@@ -74,16 +77,45 @@ export default function Dashboard() {
         }
         setIsLoading(true)
     }
+    useEffect(() => {
+        // getWebSettingsData();
+        
+    }, []);
 
+    
+    const getWebSettingsData = async (e) => {
+            await common.getAPI({
+                method: 'GET',
+                url: 'web-setting?action=getweb',
+                data: {},
+            }, (resp) => {
+                console.log("resp",resp)
+                const customizationData = {
+                    siteTitle: resp.data.siteTitle,
+                    primaryColor: resp?.data?.primaryColor,
+                    secondaryColor: resp?.data?.primaryColor,
+                    bodyColor: resp?.data?.bodyColor,
+                    primaryLightColor:resp?.data?. primaryLightColor,
+                    paragraphColor: resp?.data?.paragraphColor,
+                    headingColor: resp?.data?.headingColor,
+                    googleScript: resp?.data?.googleScript
+                }
+    
+            userData['adminprofileUrl'] =  resp?.data?.logo
+            userData['adminfaviconUrl'] =  resp?.data?.favIcon
+            userData['Color'] =customizationData
+            // myStore.updateStoreData("userData", userData)
+            });
+        
+    }
     return (
         <>
             <Head>
-                <title>{process.env.SITE_TITLE}- Dashboard</title>
+                <title>{(userData?.Color?.siteTitle)?userData?.Color?.siteTitle:process.env.SITE_TITLE}- Dashboard</title>
             </Head>
             {dashBoardData ? <div className='rz_dashboardWrapper' >
                 <div className="ps_conatiner-fluid">
                     <div className='row '>
-
                         <div className='Dash_box_user Dash_pad2'>
                             <div className='rz_member' style={{ "background": "#d6e3fc" }}>
                                 <div className='dash_inner' >
@@ -118,14 +150,14 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             </div>
-                            <div className='rz_member' style={{ "background": "var(--primarybg_color)" }}>
+                            <div className='rz_member' style={{ "background": "#ebe1e9" }}>
                                 <div className='dash_inner' >
-                                    <div className="dash_icon_box" style={{ "background": "var(--gradientColor)" }}>
+                                    <div className="dash_icon_box" style={{ "background": "#ff776b" }}>
                                         {svg.app.dash_published}
                                     </div>
                                     <div>
                                         <h6 >{dashBoardData?.published || 0}</h6>
-                                        <h5 style={{ "color": "var(--primaryColor)" }}>Total Templates</h5>
+                                        <h5 style={{ "color": "#ff776b" }}>Total Templates</h5>
                                     </div>
                                 </div>
                             </div>
@@ -154,7 +186,6 @@ export default function Dashboard() {
 
                                                 <div className='rz_searchBox'>
                                                     <div className=''>
-                            
                                                         <DateRangePicker
                                                             onChange={(e) => handleDateRangeFilter(e)}
                                                             placeholder="Select date range"
@@ -176,7 +207,6 @@ export default function Dashboard() {
                                         <h6 className="text-center"> Posts Analytics</h6>
                                         <div className='rz_dash_div justify-content-between'>
                                             <div className="pb-md-0 pb-3">
-
                                                 <div className='rz_searchBox'>
                                                     <div className=''>
                                                         <DateRangePicker
@@ -205,11 +235,9 @@ export default function Dashboard() {
                                                                     <span className='fw-bold'>Published Posts</span>
                                                                 </label>
                                                             </div>
-
                                                         </div>
                                                     </div>
                                                 </div>
-
                                             </div>
                                         </div>
                                     </div>

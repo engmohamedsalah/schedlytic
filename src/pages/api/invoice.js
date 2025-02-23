@@ -86,6 +86,7 @@ let getinvoiceList = (req, res) => {
             totalRecords: count,
             fetchedRecords: limit == 1 ? 1 : data.length,
           });
+          console.log({data})
     }
   );
 }catch(e){

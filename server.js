@@ -7,9 +7,9 @@ const  process  = require('./next.config');
 const dev =  process.env.ENVIRONMENT=="dev" ? true : false
 const hostname = 'localhost'
 const port = 3016
-
 const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
+
 
 app.prepare().then(() => {
   createServer(async (req, res) => {
@@ -45,4 +45,5 @@ app.prepare().then(() => {
 
 cron.schedule('* * * * *', () => {
   schedukeCron()
+
   });

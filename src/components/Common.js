@@ -81,8 +81,8 @@ export let common = {
 			}
 		}
 
-		if (!params.url.includes("stripe") && !params.url.includes("paypal") && !params.url.includes("subscription-plan") && 
-			params.url.split("auth").length <= 1 &&
+		if (!params.url.includes("stripe") && !params.url.includes("paypal") && !params.url.includes("subscription-plan") && !params.url.includes("createuser") && 
+			params.url.split("auth").length <= 1 && !params.url.includes("web-setting") && 
 			params.url.split("get-user-template-for-thumb").length <= 1 &&
 			typeof Cookies.get("authToken") == "undefined" &&
 			params.requireAuth != false
@@ -112,7 +112,7 @@ export let common = {
 							toast.error(resp.message);
 							if(resp.message=="jwt expired"){
 								appStore.getState().logout()
-								router.push('/login');
+								// router.push('/login');
 							}
 						}
 
@@ -506,10 +506,13 @@ export async function authAction(type , data , cb) {
             method : 'GET',
             data : data
         }, (resp) => {
+			
 			let respData = resp.data
-			cb(respData);
 			Cookies.set('authToken', respData.token , { expires: 1 })
-			Router.push(respData.role == 'Admin'?"/admin/dashboard": respData.role == 'User' ? "/dashboard" : "/admin/templates");
+			console.log({respData})
+			cb(respData);
+			
+			// Router.push(respData.role == 'Admin'?"/admin/dashboard": respData.role == 'User' ? "/dashboard" : "/admin/templates");
         } , (resp) => {
         	cb(resp);
         });
@@ -542,7 +545,7 @@ export async function authAction(type , data , cb) {
             }
         }, (resp) => {
 			cb();
-			Router.push("/auth/login");
+			// Router.push("/auth/login");
         } , () => {
         	cb();
         });
@@ -557,6 +560,6 @@ export function resetLoginDataRedux(respData){
 
 export function logout(cb){
    Cookies.remove('authToken')
-   Router.push("/login");  
+//    Router.push("/login");  
    cb();
 }

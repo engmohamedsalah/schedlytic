@@ -96,6 +96,16 @@ let getPostCount = (req, res) => {
     }
     })
     data.pinterest=pinterest
+    let youtube= await dbQuery.count({
+      collection : postModel,
+      where :{...where,"socialMediaAccounts": {
+          $elemMatch: {
+          "type": "youtube"
+          }
+      }
+  }
+  })
+  data.youtube=youtube
         }else
         {
            

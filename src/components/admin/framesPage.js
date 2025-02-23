@@ -369,64 +369,7 @@ export default function Frames_page() {
                     </div>}
                 </div>
             </MyModal>
-            {/* <MyModal
-                shown={isEditModel}
-                close={() => {
-                    setEditAssets({})
-                    setisEditModel(false)
-                }}
-            >
-                <form onSubmit={e => {
-                    e.preventDefault()
-                    updateCategory()
-                }}>
-                    <div className="modal-body">
-                        <div className="modal-header">
-                            <h3>Edit Frame</h3>
-                        </div>
-                        <div className='rz_creatReels'>
-
-                            <div className='rz_custom_form'>
-                                <label className="form-label ">Tag <span className="text-danger">*</span></label>
-                                <input type='text'
-                                    onChange={(e) => {
-                                        setEditAssets({
-                                            ...editAssets,
-                                            tag: e.target.value
-                                        })
-                                    }}
-                                    className='rz_customInput' placeholder='Enter tag' value={editAssets?.tag} />
-                            </div>
-                        </div>
-
-                        <div className='rz_creatReels'>
-
-                            <div className='rz_custom_form rz_customSelect'>
-                                <label className="form-label"> Category <span className="text-danger">*</span></label>
-
-                                <Select
-                                    placeholder={'Select category'}
-                                    options={categoriesData}
-                                    defaultValue={editAssets?.select}
-                                    onChange={e => {
-                                        handleCategory(e)
-                                    }}
-                                    theme={(theme) => ({
-                                        ...theme,
-                                        colors: {
-                                            ...theme.colors,
-                                            primary: 'var(--primaryColor)',
-                                        },
-                                    })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className='d-flex justify-content-center'><button className='rz_btn'>{state.processAction ? 'processing...' : 'Continue'}</button></div>
-                    </div>
-                </form>
-
-            </MyModal> */}
+          
 
             <ConfirmationPopup
                 shownPopup={isRemoveAction}

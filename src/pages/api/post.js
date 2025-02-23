@@ -24,6 +24,7 @@ export default async function handler(req, res) {
       }
     } else if (req.method == "PUT") {
       updatePost(req, res);
+      
     } else if (req.method == "GET") {
       if(req.query.action == "Month")
       {
@@ -34,11 +35,15 @@ export default async function handler(req, res) {
       }
     } else if (req.method == "DELETE") {
       deletePost(req, res);
+    }else if (req.method == 'POST'){
+      saveasdraft(req,res)
     }
+    
   } catch (error) {
     handleError(error, "AuthAPI");
   }
 }
+
 
 let addNewPost = (req, res) => {
   customValidator(
@@ -54,11 +59,14 @@ let addNewPost = (req, res) => {
     res,
     async ({ authData } = validateResp) => {
       let { posts,socialMediaAccounts,stype} =req.body;
+      console.log({posts},"ppp");
+      console.log({stype},"lll")
       let postdata=[]
       for(let i=0;i<posts.length;i++)
       {
         let { title, text, url, scheduleDate, timeZone ,postDate,type,platefrom,thumb} =posts[i];
         const d = new Date();
+        console.log(d);
         let sd =  postDate ? new Date(postDate) : new Date();
 
         if(stype!="post")
@@ -73,9 +81,10 @@ let addNewPost = (req, res) => {
         }
      
        let socialA=[...socialMediaAccounts]
+       console.log({socialMediaAccounts},"fff")
        if(url=="")
        {
-        socialA=socialA.filter((d1)=>(d1.type=="facebook" || d1.type=="linkedin"))
+        socialA=socialA.filter((d1)=>(d1.type=="facebook" || d1.type=="linkedin" ))
        }
        let socialAC=[]
       for(let j=0;j<platefrom.length;j++){
@@ -108,7 +117,6 @@ let addNewPost = (req, res) => {
         posttype : type,
         thumb : thumb,
       };
-
       if(stype == "post")
       {
         insData.type="postnow"
@@ -192,7 +200,7 @@ let addNewPost = (req, res) => {
       });
       res.status(200).json({
         status: true,
-        message: "Post Submited successfully.",
+        message: "Post Submited successfully.",postdata
       });
       if(stype == "post")
       {
@@ -221,8 +229,9 @@ let updatePost = (req, res) => {
     async ({ authData } = validateResp) => {
       let { target, data } = req.body;
       let d2={...data}
-      d2.posttype=d2.type
-      delete d2.type
+      d2.posttype=d2?.type || "",
+     d2.type="",
+     d2.status="pending"
       dbQuery
         .select({
           collection: postModel,
@@ -294,7 +303,7 @@ let getPostList = (req, res) => {
               : await dbQuery.count({
                   collection: postModel,
                 });
-
+console.log('posts',posts)
           res.status(200).json({
             status: true,
             message: "",
@@ -408,7 +417,7 @@ let addMediaToLibrary = (req, res) => {
               userId: authData.id,
               path: fileKey,
               tags: "ai",
-              type: "images",
+              type: "image",
               meta: mediaMeta,
             };
             dbQuery
@@ -434,7 +443,7 @@ let addMediaToLibrary = (req, res) => {
         });
 
         });
-      } catch (err) {
+      } catch (error) {
         handleError(error, "UploadFile");
       }
     })

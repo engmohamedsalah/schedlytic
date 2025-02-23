@@ -154,7 +154,8 @@ export default function UserDetails() {
             pinterest: { svg: svg.app.pinterst, color: "#bd081c" },
             instagram: { svg: svg.app.instagram, color: "#e4405f" },
             linkedin: { svg: svg.app.linkedin, color: "#0a66c2" },
-            facebook: { svg: svg.app.facebook, color: "#1877f2" }
+            facebook: { svg: svg.app.facebook, color: "#1877f2" },
+            youtube: { svg: svg.app.youtube, color: "red" }
         }
         return d1[value]
     }
@@ -320,8 +321,8 @@ export default function UserDetails() {
                                                                         return (<tr key ={i}>
                                                                             <th scope="row">
                                                                                 <div className="d-flex align-items-center">
-                                                                                    <div className="dash_icon_box" style={{ "background": d1.color }}>
-                                                                                        {d1.svg}
+                                                                                    <div className="dash_icon_box" style={{ "background": d1?.color }}>
+                                                                                        {d1?.svg}
                                                                                     </div>
                                                                                     <span>{data.plateform}</span>
                                                                                 </div>

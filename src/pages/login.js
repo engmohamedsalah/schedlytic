@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Auth from '@/pages/auth/[auth]'
 
 export default function Home(props) {
+  // cosole.log("props",props)
   return (
     <>
       <Head>
@@ -14,7 +15,7 @@ export default function Home(props) {
         <meta httpEquiv="expires" content="0" />
         <meta httpEquiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT" />
         <meta httpEquiv="pragma" content="no-cache" />
-        <link rel="shortcut icon" href="../assets/images/favicon.png" />
+        <link rel="shortcut icon" href="../assets/images/favicsdson .png" />
       </Head>
       <Auth/>
       

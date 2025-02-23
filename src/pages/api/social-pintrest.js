@@ -33,7 +33,7 @@ let pinterestBoardList = (req, res) => {
         async ({ authData } = validateResp) => {
             let userID = authData.id;
             try {
-                const response = await axios.get(`https://${process.env.PINTEREST_URL}/v5/boards`, {
+                const response = await axios.get(`https://${process.env.PINTEREST_URL}/boards`, {
                     headers: {
                         Authorization: `Bearer ${req.query.access_token}`,
                     },
@@ -78,7 +78,7 @@ let pinterest =async(req,res)=>{
 		
 		var options = {
 			method: "POST",
-			url: `https://${process.env.PINTEREST_URL}/v5/oauth/token`,
+			url: `https://${process.env.PINTEREST_URL}/oauth/token`,
 			headers: {
 				Authorization: `Basic ${auth}`,
 				"Content-Type": "application/x-www-form-urlencoded",
@@ -91,7 +91,7 @@ let pinterest =async(req,res)=>{
 			data = response.data;
 			var options1 = {
 				method: "GET",
-				url: `https://${process.env.PINTEREST_URL}/v5/user_account`,
+				url: `https://${process.env.PINTEREST_URL}/user_account`,
 				headers: {
 					Authorization: `Bearer ${data.access_token}`,
 					"Content-Type": "application/x-www-form-urlencoded",

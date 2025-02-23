@@ -1,4 +1,5 @@
 const postModel = require("../api/models/postModel")
+const socialAccountModel = require("../api/models/socialAccount")
 const {
   dbQuery
 } = require("./lib/commonLib");
@@ -9,6 +10,8 @@ const process = require('../../../next.config');
 const fs = require('fs').promises;
 const FormData = require('form-data');
 const  path = require("path");
+const mongoose  = require('mongoose');
+
 
 
 let schedukeCron = async () => {
@@ -50,7 +53,6 @@ if(arr.length>0)
 
 let socialPost = async (data) => {
   try {
-
     let socialAccounts = data.socialMediaAccounts
     let localurl = null
 
@@ -59,25 +61,50 @@ let socialPost = async (data) => {
     }
     let errorList={}
     for (let i = 0; i < socialAccounts.length; i++) {
+
+      let datatoken = await dbQuery.select({
+        collection: socialAccountModel,
+        where: {_id : new mongoose.Types.ObjectId(socialAccounts[i]._id)},
+        limit: 1,
+      });
+      if(!datatoken){
+        errorList[type]="Account is not found"
+        continue 
+      }
+
       if (socialAccounts[i].type == "facebook") {
           try{
+        let findpages=socialAccounts[i].data.facebookPages
+        let totalpages=datatoken.data.facebookPages
+        let pglist=[]
+        findpages.forEach((elements,index)=>{
+            let c1=totalpages.find((s1)=>s1.id==elements.id)
+            if(c1){
+              pglist.push(c1)
+              }
+        })
+        if(pglist.length==0)
+          {
+            errorList["facebook"]="Pages not found."
+            continue
+          }
         if (data.url) {
           if (data.posttype == "video") {
-            await pageFaceBookUploadVideo(socialAccounts[i], data, localurl)
+            await pageFaceBookUploadVideo(pglist, data, localurl)
           }
           else {
-            await pageFaceBookUpload(socialAccounts[i], data, localurl)
+            await pageFaceBookUpload(pglist, data, localurl)
           }
         } else {
-          await uploadFacebookTextOnly(socialAccounts[i], data.text)
+          await uploadFacebookTextOnly(pglist, data.text)
         }
       }catch(e){
         errorList["facebook"]=(typeof e === 'object' ? JSON.stringify(e) : e)
       }
       } else {
         if (socialAccounts[i].type == "instagram") {       
-          try{                                                                     
-          await InstagramUploadPost(socialAccounts[i], data, data.posttype)
+          try{                                                                    
+          await InstagramUploadPost(datatoken, data, data.posttype)
           }
           catch(e){
             errorList["instagram"]=(typeof e === 'object' ? JSON.stringify(e) : e)
@@ -87,34 +114,56 @@ let socialPost = async (data) => {
             try{
             if (data.url) {
               if (data.posttype == "video") {
-                await linkedInPostVideo(socialAccounts[i].data.id, socialAccounts[i].data.access_token, data.text, localurl)
+                await linkedInPostVideo(datatoken.data.id, datatoken.data.access_token, data.text, localurl)
               } else {
-                await linkedInPost(socialAccounts[i].data.id, socialAccounts[i].data.access_token, data.text, localurl)
+                await linkedInPost(datatoken.data.id, datatoken.data.access_token, data.text, localurl)
               }
             } else {
-              await uploadLinkdinTextOnly(socialAccounts[i], data)
+              await uploadLinkdinTextOnly(datatoken, data)
             }
           }catch(e){
-            
             errorList["linkedIn"]=(typeof e === 'object' ? JSON.stringify(e) : e)
           }
           }
-          else {
-          
-            if (data.url && socialAccounts[i].type == "pinterest") {
+          else if (data.url && socialAccounts[i].type == "pinterest") {
               try{
+                  let id = socialAccounts[i].data?.boardList?.id
+                  let list= datatoken.data.boardList
+
+                  let fboard=""
+                  if(list)
+                    {
+                     let board= list.find((d1)=>d1.id==id)
+                     if(board){
+                      fboard=board
+                     }else{
+                      errorList["pinterest"]="Board is not found"
+                      continue 
+                     }
+                    }else{
+                      errorList["pinterest"]="Board is not found"
+                      continue 
+                    }
+                
               if (data.posttype == "video") {
-                await pinterestVideoPost(socialAccounts[i], data ,localurl)
+                await pinterestVideoPost(datatoken, data ,localurl,fboard)
               }else{
-                await pinterestPost(socialAccounts[i], data)
+                await pinterestPost(datatoken, data,fboard)
               }
             }
             catch(e){
               errorList["pinterest"]=(typeof e === 'object' ? JSON.stringify(e) : e)
             }
               
-            }
-          }
+            } else if(socialAccounts[i].type == "youtube"){
+              try{
+                await YoutubeVideoUpload(datatoken.data,data,localurl)
+              }catch(e){
+                console.log({e},"errror")
+                errorList["youtube"]=(typeof e === 'object' ? JSON.stringify(e) : e)
+              }
+              }
+          
         }
       }
     }
@@ -150,6 +199,7 @@ let socialPost = async (data) => {
  
    
   } catch (e) {
+    console.log("errrrrrorr",e)
     await dbQuery.update({
       collection: postModel,
       data: { status: "Failed", message: typeof e == 'object' ? JSON.stringify(e) : e },
@@ -162,12 +212,11 @@ let socialPost = async (data) => {
 }
 
 
-const pinterestVideoPost = (data, contain,localurl) => {
+const pinterestVideoPost = (data, contain,localurl,board) => {
   return new Promise(async (resolve, reject) => {
     try {
       let refresh_token = data.data.refresh_token
       let scope = data.data.scope.replaceAll(" ", ",");
-      let board_id = data.data.boardList.id
       let data1 = {
         grant_type: "refresh_token",
         refresh_token: refresh_token,
@@ -188,7 +237,7 @@ const pinterestVideoPost = (data, contain,localurl) => {
             {
               let final = await createPin({
                 media_id: revideo.media_id,
-                board_id: board_id,
+                board_id: board.id,
                 thumb: contain.thumb,
               },
               access_token,
@@ -248,8 +297,10 @@ const linkedInPostVideo = async (accountID, access_token, text, localurl) => {
       const stats = await fs.stat(localurl);
       if (stats) {
         let uploadArr = await linkdinIntialfileUpload(access_token,accountID,stats.size ,"video")
+        console.log("upload array",uploadArr)
         let uprs = uploadArr.value.uploadInstructions
         let res = []
+        console.log('uprs.length',uprs.length)
         if(uprs.length>1)
         {
          for (let i = 0; i < uprs.length; i++) {
@@ -260,11 +311,14 @@ const linkedInPostVideo = async (accountID, access_token, text, localurl) => {
           let e1 = await uploadbytetobytelinkedin(uprs[0].uploadUrl, localurl, access_token);
           res.push(e1)
         }
+        console.log({res})
         if (res.length>0) {
           const media = uploadArr.value.video;
           let publishResponse= await linkdinFinalfileUpload(media,res,access_token)
+          console.log({publishResponse})
           if (publishResponse) {
             let publish= await linkdinPublish(access_token,accountID,text,media,"video")
+            console.log({publish},"jai ho babab")
             if (publish) {
               resolve(publish.data);  
             }
@@ -280,7 +334,7 @@ const linkedInPostVideo = async (accountID, access_token, text, localurl) => {
 const pageFaceBookUploadVideo = async (data, contain, localUrl) => {
   try {
     return new Promise(async (resolve, reject) => {
-      let pages = data.data.facebookPages;
+      let pages = data;
       for (let i = 0; i < pages.length; i++) {
         const pageToken = pages[i].access_token; // Use pages[i] instead of pages[0]
         const photoPath = localUrl;
@@ -289,10 +343,7 @@ const pageFaceBookUploadVideo = async (data, contain, localUrl) => {
           file_url: contain.url,
           description: contain.text,
         };
-        //  let u1=await  imageUrlToDataUrl("https://dneelh732mdsp.cloudfront.net/users-data/65488aa1b763c847ce80b2e5/images/1705135992430.png")
-        if (true) {
-          // perm["thumb"]="https://dneelh732mdsp.cloudfront.net/users-data/65488aa1b763c847ce80b2e5/images/1705135992430.png"
-        }
+   
         const config = {
           method: "post",
           url: `https://graph.facebook.com/v17.0/${pages[i].id}/videos`,
@@ -318,7 +369,7 @@ let pageFaceBookUpload = async (data, contain, localUrl) => {
   try {
     return new Promise(async (resolve, reject) => {
       try {
-        let pages = data.data.facebookPages;
+        let pages = data;
 
         for (let i = 0; i < pages.length; i++) {
           const access_token = pages[i].access_token; // Use pages[i] instead of pages[0]
@@ -364,7 +415,7 @@ let pageFaceBookUpload = async (data, contain, localUrl) => {
 let uploadFacebookTextOnly = async (data, text) => {
   try {
     return new Promise(async (resolve, reject) => {
-      let pages = data.data.facebookPages;
+      let pages = data;
       for (let i = 0; i < pages.length; i++) {
         const access_token = pages[i].access_token;
         const caption = text;
@@ -402,13 +453,13 @@ const InstagramUploadPost = async (data, contain, type) => {
     const instagramID = data.data.instagrampage.instagramID;
     try {
       let parm = {}
+      console.log("contain.urlcontain.url",contain.url)
       if (type == "video") {
         parm = {
           access_token: token,
           video_url: contain.url,
           media_type: "REELS",
           caption: contain.text,
-          // cover_url : "https://dneelh732mdsp.cloudfront.net/users-data/65488aa1b763c847ce80b2e5/images/1705135992430.png"
         }
       } else {
         parm = {
@@ -418,11 +469,14 @@ const InstagramUploadPost = async (data, contain, type) => {
           caption: contain.text,
         }
       }
+      console.log("jai jo")
       const response = await axios.post(`https://graph.facebook.com/v13.0/${instagramID}/media`, null, {
         params: parm
       });
+      console.log("jai jo111",response)
       const result = response.data;
-      checkStatus(result.id, token).then(async (status) => {
+      let status =await checkStatus(result.id, token)
+        console.log({status})
         if(status.status_code=="ERROR")
         {
           reject(status)
@@ -437,9 +491,10 @@ const InstagramUploadPost = async (data, contain, type) => {
             }
           }
         }
-      })
+     
   
     } catch (error) {
+      console.log("errrror",error)
     reject(error)
     }
   })
@@ -455,7 +510,7 @@ const uploadLinkdinTextOnly = async (data, contain) => {
       url: 'https://api.linkedin.com/rest/posts',
       headers: {
         Authorization: `Bearer ${access_token}`,
-        'Linkedin-Version': '202302',
+        'Linkedin-Version': process.env.LINKEDIN_API_VERSION,
         'X-Restli-Protocol-Version': '2.0.0',
         'Content-Type': 'application/json',
       },
@@ -481,12 +536,11 @@ const uploadLinkdinTextOnly = async (data, contain) => {
 };
 
 
-let pinterestPost = (data, contain) => {
+let pinterestPost = (data, contain,board) => {
   return new Promise(async (resolve, reject) => {
     try {
       let refresh_token = data.data.refresh_token
       let scope = data.data.scope.replaceAll(" ", ",");
-      let board_id = data.data.boardList.id
       let data1 = {
         grant_type: "refresh_token",
         refresh_token: refresh_token,
@@ -496,9 +550,9 @@ let pinterestPost = (data, contain) => {
       let access_token = getToken.access_token;
       try {
         const response = await axios.post(
-          "https://api.pinterest.com/v5/pins/",
+          `https://${process.env.PINTEREST_URL}/pins/`,
           {
-            "board_id": board_id,
+            "board_id": board.id,
             "link": "https://www.pinterest.com/",
             "title": contain.text,
             "description": contain.text,
@@ -517,6 +571,7 @@ let pinterestPost = (data, contain) => {
             },
           }
         );
+
         resolve()
       } catch (error) {
         reject(error)
@@ -549,8 +604,6 @@ const linkedInPost = async (accountID, access_token, text, localurl) => {
   }
 })
 };
-
-
 
 const uploadbytetobytelinkedin = (uploadurl, url, access_token,data=false) => {
   return new Promise((resolve, reject) => {
@@ -609,7 +662,7 @@ const pinterestRefreshToken = (data) => {
 
       const requestData = {
         method: 'POST',
-        url: `https://${process.env.PINTEREST_URL}/v5/oauth/token`,
+        url: `https://${process.env.PINTEREST_URL}/oauth/token`,
         headers: headers,
         data: encodedData,
       };
@@ -624,31 +677,32 @@ const pinterestRefreshToken = (data) => {
   });
 };
 
-const checkStatus = async (id, token) => {
-  try {
-    const options = {
-      method: 'GET',
-      url: `https://graph.facebook.com/v13.0/${id}/`,
-      params: {
-        access_token: token,
-        fields: 'status,status_code',
-      },
+const checkStatus = (id, token) => {
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      axios({
+        method: 'GET',
+        url: `https://graph.facebook.com/v13.0/${id}/`,
+        params: {
+          access_token: token,
+          fields: 'status,status_code',
+        },
+      })
+      .then(response => {
+        const result = response.data;
+        if (result.status_code === 'FINISHED' || result.status_code === 'ERROR') {
+          resolve(result);
+        } else {
+          setTimeout(check,6000);
+        }
+      })
+      .catch(error => {
+        reject(error?.response?.data?.error || error);
+      });
     };
 
-    const response = await axios(options);
-    const result = response.data;
-
-    if (result.status_code === 'PUBLISHED' || result.status_code === 'FINISHED') {
-      return result;
-    } else if (result.status_code === 'ERROR') {
-      return result;
-    } else {
-      return checkStatus(id, token)
-    }
-  } catch (error) {
-    return error.message
-  }
-
+    check();
+  });
 };
 
 
@@ -691,7 +745,7 @@ const linkdinIntialfileUpload=(access_token,accountID,size,type)=>{
       url: `https://api.linkedin.com/rest/${type}s?action=initializeUpload`,
       headers: {
         Authorization: `Bearer ${access_token}`,
-        'Linkedin-Version': '202302',
+        'Linkedin-Version': process.env.LINKEDIN_API_VERSION,
         'X-Restli-Protocol-Version': '2.0.0',
         'Content-Type': 'application/json',
       },
@@ -756,7 +810,7 @@ const linkdinPublish=(access_token,accountID,text,media,type)=>{
       url: 'https://api.linkedin.com/v2/ugcPosts',
       headers: {
         Authorization: `Bearer ${access_token}`,
-        'Linkedin-Version': '202302',
+        'Linkedin-Version': process.env.LINKEDIN_API_VERSION,
         'X-Restli-Protocol-Version': '2.0.0',
         'Content-Type': 'application/json',
       },
@@ -811,7 +865,7 @@ let registerVideoPinterest = async (access_token) => {
 
 		var config = {
 			method: "post",
-			url: `https://${process.env.PINTEREST_URL}/v5/media`,
+			url: `https://${process.env.PINTEREST_URL}/media`,
 			headers: {
 				Authorization: `Bearer ${access_token}`,
 				"Content-Type": "application/json",
@@ -836,7 +890,7 @@ let checkVideoPinUploaded = async(args, access_token) => {
   try{
 		let config = {
 			method: "get",
-			url: `https://${process.env.PINTEREST_URL}/v5/media/${args.media_id}`,
+			url: `https://${process.env.PINTEREST_URL}/media/${args.media_id}`,
 			headers: {
 				Authorization: `Bearer ${access_token}`,
 				"Content-Type": "application/json",
@@ -872,7 +926,7 @@ let createPin = (args, access_token,data) => {
 
 		let config = {
 			method: "post",
-			url: `https://${process.env.PINTEREST_URL}/v5/pins`,
+			url: `https://${process.env.PINTEREST_URL}/pins`,
 			headers: {
 				Authorization: `Bearer ${access_token}`,
 				"Content-Type": "application/json",
@@ -888,4 +942,57 @@ let createPin = (args, access_token,data) => {
 			});
 	});
 };
+
+
+let YoutubeVideoUpload=(data,caption,localPath)=>{
+  return new Promise((resolve,reject)=>{
+    const { google } = require('googleapis');
+  const OAuth2 = google.auth.OAuth2;
+const service = google.youtube('v3');
+console.log("1")
+const oAuth2Client = new OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET,     process.env.LIVE_URL+process.env.GOOGLE_REDIRECT_URIS);
+console.log("2")
+oAuth2Client.setCredentials({
+  refresh_token: data.refreshToken
+});
+console.log("3")
+oAuth2Client.refreshAccessToken((error, tokens) => {
+  oAuth2Client.setCredentials(data.accessToken);
+});
+
+let auth = oAuth2Client;
+service.videos.insert({
+  auth: auth,
+part: 'snippet,status',
+requestBody: {
+  snippet: {
+    title: caption.title,
+  description:caption.text,
+defaultLanguage: 'en',
+defaultAudioLanguage: 'en'
+},
+status: {
+  privacyStatus: "public"
+},
+},
+media: {
+  body: require("fs").createReadStream(localPath),
+},
+}, function(err, response) {
+  if (err) {
+    console.log({err})
+    console.log("ooooopppppppppp",err.response?.data?.error.errors);
+    reject(err.response?.data?.errors || err);
+  }else{
+    resolve(response?.data || {});
+  }
+})
+})
+}
+
+
+
+
+
+
 module.exports = { schedukeCron, socialPost }

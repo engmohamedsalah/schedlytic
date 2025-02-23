@@ -36,12 +36,12 @@ let aiTextGenration=async(req,res)=>{
               });
               const chatCompletion = await openai.chat.completions.create({
                 messages: [{ role: 'user', content: content }],
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-4o-2024-05-13',
               });
               res.status(200).json({ 
                 data : chatCompletion.choices[0].message.content ,
                 status : true,
-                message : 'Image genrate sucessfully'
+                message : 'Caption generate sucessfully.'
             })
         }
         catch(e){

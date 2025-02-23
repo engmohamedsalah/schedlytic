@@ -112,6 +112,12 @@ export function LineChart(props) {
                     borderColor: '#084d92',
                     backgroundColor: '#084d92',
                 },
+                {
+                    label: 'Youtube',
+                    data: chartData?.map((data) => data.youtube),
+                    borderColor: '#084d92',
+                    backgroundColor: 'red',
+                }
             ],
         };
 
@@ -141,7 +147,7 @@ export function LineChart(props) {
                     for (const key in dateMap) {
                         resp.data.map(postData => {
                             if (key == postData.date) {
-                                let data = { date: postData.date, instagram: postData?.instagram || 0, facebook: postData?.facebook || 0, linkedIn: postData?.linked || 0, pinterest: postData?.pinterest || 0 };
+                                let data = { date: postData.date, instagram: postData?.instagram || 0, facebook: postData?.facebook || 0, linkedIn: postData?.linked || 0, pinterest: postData?.pinterest || 0, youtube: postData?.youtube || 0 };
                                 dateMap[key] = data
                             }
                         })
